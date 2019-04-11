@@ -40,6 +40,7 @@ memset(void *dst, int c, uint n)
   return dst;
 }
 
+//返回字符串中选定字符出现处的指针
 char*
 strchr(const char *s, char c)
 {
@@ -49,20 +50,25 @@ strchr(const char *s, char c)
   return 0;
 }
 
+//读取buf中换行符前的字符串
 char*
 gets(char *buf, int max)
 {
   int i, cc;
   char c;
 
+  //循环直至最大值
   for(i=0; i+1 < max; ){
+	  //读取
     cc = read(0, &c, 1);
     if(cc < 1)
       break;
     buf[i++] = c;
+	//找到换行符跳除
     if(c == '\n' || c == '\r')
       break;
   }
+  //将其后一个字符改为结束符得到新串
   buf[i] = '\0';
   return buf;
 }
