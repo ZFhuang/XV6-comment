@@ -1,0 +1,314 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="源文件">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="头文件">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="资源文件">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="asm.h">
+      <Filter>源文件</Filter>
+    </ClInclude>
+    <ClInclude Include="buf.h">
+      <Filter>源文件</Filter>
+    </ClInclude>
+    <ClInclude Include="date.h">
+      <Filter>源文件</Filter>
+    </ClInclude>
+    <ClInclude Include="defs.h">
+      <Filter>源文件</Filter>
+    </ClInclude>
+    <ClInclude Include="elf.h">
+      <Filter>源文件</Filter>
+    </ClInclude>
+    <ClInclude Include="fcntl.h">
+      <Filter>源文件</Filter>
+    </ClInclude>
+    <ClInclude Include="file.h">
+      <Filter>源文件</Filter>
+    </ClInclude>
+    <ClInclude Include="fs.h">
+      <Filter>源文件</Filter>
+    </ClInclude>
+    <ClInclude Include="kbd.h">
+      <Filter>源文件</Filter>
+    </ClInclude>
+    <ClInclude Include="memlayout.h">
+      <Filter>源文件</Filter>
+    </ClInclude>
+    <ClInclude Include="mmu.h">
+      <Filter>源文件</Filter>
+    </ClInclude>
+    <ClInclude Include="mp.h">
+      <Filter>源文件</Filter>
+    </ClInclude>
+    <ClInclude Include="param.h">
+      <Filter>源文件</Filter>
+    </ClInclude>
+    <ClInclude Include="proc.h">
+      <Filter>源文件</Filter>
+    </ClInclude>
+    <ClInclude Include="sleeplock.h">
+      <Filter>源文件</Filter>
+    </ClInclude>
+    <ClInclude Include="spinlock.h">
+      <Filter>源文件</Filter>
+    </ClInclude>
+    <ClInclude Include="stat.h">
+      <Filter>源文件</Filter>
+    </ClInclude>
+    <ClInclude Include="syscall.h">
+      <Filter>源文件</Filter>
+    </ClInclude>
+    <ClInclude Include="traps.h">
+      <Filter>源文件</Filter>
+    </ClInclude>
+    <ClInclude Include="types.h">
+      <Filter>源文件</Filter>
+    </ClInclude>
+    <ClInclude Include="user.h">
+      <Filter>源文件</Filter>
+    </ClInclude>
+    <ClInclude Include="x86.h">
+      <Filter>源文件</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="bio.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="bootmain.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="cat.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="console.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="echo.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="echo_reversal.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="exec.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="file.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="forktest.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="fs.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="grep.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="ide.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="init.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="ioapic.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="kalloc.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="kbd.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="kill.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="lapic.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="ln.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="log.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="ls.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="main.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="memide.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="mkdir.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="mkfs.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="mp.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="picirq.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="pipe.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="printf.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="proc.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="rm.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="sh.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="sleeplock.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="spinlock.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="stressfs.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="string.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="syscall.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="sysfile.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="sysproc.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="trap.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="uart.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="ulib.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="umalloc.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="usertests.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="vm.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="wc.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="zombie.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="bootasm.S">
+      <Filter>源文件</Filter>
+    </None>
+    <None Include="bootblock.asm">
+      <Filter>源文件</Filter>
+    </None>
+    <None Include="cat.asm">
+      <Filter>源文件</Filter>
+    </None>
+    <None Include="echo.asm">
+      <Filter>源文件</Filter>
+    </None>
+    <None Include="echo_reversal.asm">
+      <Filter>源文件</Filter>
+    </None>
+    <None Include="entry.S">
+      <Filter>源文件</Filter>
+    </None>
+    <None Include="entryother.asm">
+      <Filter>源文件</Filter>
+    </None>
+    <None Include="entryother.S">
+      <Filter>源文件</Filter>
+    </None>
+    <None Include="forktest.asm">
+      <Filter>源文件</Filter>
+    </None>
+    <None Include="grep.asm">
+      <Filter>源文件</Filter>
+    </None>
+    <None Include="init.asm">
+      <Filter>源文件</Filter>
+    </None>
+    <None Include="initcode.asm">
+      <Filter>源文件</Filter>
+    </None>
+    <None Include="initcode.S">
+      <Filter>源文件</Filter>
+    </None>
+    <None Include="kernel.asm">
+      <Filter>源文件</Filter>
+    </None>
+    <None Include="kill.asm">
+      <Filter>源文件</Filter>
+    </None>
+    <None Include="ln.asm">
+      <Filter>源文件</Filter>
+    </None>
+    <None Include="ls.asm">
+      <Filter>源文件</Filter>
+    </None>
+    <None Include="mkdir.asm">
+      <Filter>源文件</Filter>
+    </None>
+    <None Include="rm.asm">
+      <Filter>源文件</Filter>
+    </None>
+    <None Include="sh.asm">
+      <Filter>源文件</Filter>
+    </None>
+    <None Include="stressfs.asm">
+      <Filter>源文件</Filter>
+    </None>
+    <None Include="swtch.S">
+      <Filter>源文件</Filter>
+    </None>
+    <None Include="trapasm.S">
+      <Filter>源文件</Filter>
+    </None>
+    <None Include="usertests.asm">
+      <Filter>源文件</Filter>
+    </None>
+    <None Include="usys.S">
+      <Filter>源文件</Filter>
+    </None>
+    <None Include="vectors.S">
+      <Filter>源文件</Filter>
+    </None>
+    <None Include="wc.asm">
+      <Filter>源文件</Filter>
+    </None>
+    <None Include="zombie.asm">
+      <Filter>源文件</Filter>
+    </None>
+  </ItemGroup>
+</Project>

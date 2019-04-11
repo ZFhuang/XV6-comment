@@ -1,0 +1,218 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{AE0B6064-4A60-4D3F-8A5C-2EC73A14A1D0}</ProjectGuid>
+    <RootNamespace>XV6code</RootNamespace>
+    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup />
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+    </ClCompile>
+    <Link>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+    </ClCompile>
+    <Link>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="asm.h" />
+    <ClInclude Include="buf.h" />
+    <ClInclude Include="date.h" />
+    <ClInclude Include="defs.h" />
+    <ClInclude Include="elf.h" />
+    <ClInclude Include="fcntl.h" />
+    <ClInclude Include="file.h" />
+    <ClInclude Include="fs.h" />
+    <ClInclude Include="kbd.h" />
+    <ClInclude Include="memlayout.h" />
+    <ClInclude Include="mmu.h" />
+    <ClInclude Include="mp.h" />
+    <ClInclude Include="param.h" />
+    <ClInclude Include="proc.h" />
+    <ClInclude Include="sleeplock.h" />
+    <ClInclude Include="spinlock.h" />
+    <ClInclude Include="stat.h" />
+    <ClInclude Include="syscall.h" />
+    <ClInclude Include="traps.h" />
+    <ClInclude Include="types.h" />
+    <ClInclude Include="user.h" />
+    <ClInclude Include="x86.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="bio.c" />
+    <ClCompile Include="bootmain.c" />
+    <ClCompile Include="cat.c" />
+    <ClCompile Include="console.c" />
+    <ClCompile Include="echo.c" />
+    <ClCompile Include="echo_reversal.c" />
+    <ClCompile Include="exec.c" />
+    <ClCompile Include="file.c" />
+    <ClCompile Include="forktest.c" />
+    <ClCompile Include="fs.c" />
+    <ClCompile Include="grep.c" />
+    <ClCompile Include="ide.c" />
+    <ClCompile Include="init.c" />
+    <ClCompile Include="ioapic.c" />
+    <ClCompile Include="kalloc.c" />
+    <ClCompile Include="kbd.c" />
+    <ClCompile Include="kill.c" />
+    <ClCompile Include="lapic.c" />
+    <ClCompile Include="ln.c" />
+    <ClCompile Include="log.c" />
+    <ClCompile Include="ls.c" />
+    <ClCompile Include="main.c" />
+    <ClCompile Include="memide.c" />
+    <ClCompile Include="mkdir.c" />
+    <ClCompile Include="mkfs.c" />
+    <ClCompile Include="mp.c" />
+    <ClCompile Include="picirq.c" />
+    <ClCompile Include="pipe.c" />
+    <ClCompile Include="printf.c" />
+    <ClCompile Include="proc.c" />
+    <ClCompile Include="rm.c" />
+    <ClCompile Include="sh.c" />
+    <ClCompile Include="sleeplock.c" />
+    <ClCompile Include="spinlock.c" />
+    <ClCompile Include="stressfs.c" />
+    <ClCompile Include="string.c" />
+    <ClCompile Include="syscall.c" />
+    <ClCompile Include="sysfile.c" />
+    <ClCompile Include="sysproc.c" />
+    <ClCompile Include="trap.c" />
+    <ClCompile Include="uart.c" />
+    <ClCompile Include="ulib.c" />
+    <ClCompile Include="umalloc.c" />
+    <ClCompile Include="usertests.c" />
+    <ClCompile Include="vm.c" />
+    <ClCompile Include="wc.c" />
+    <ClCompile Include="zombie.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="bootasm.S" />
+    <None Include="bootblock.asm" />
+    <None Include="cat.asm" />
+    <None Include="echo.asm" />
+    <None Include="echo_reversal.asm" />
+    <None Include="entry.S" />
+    <None Include="entryother.asm" />
+    <None Include="entryother.S" />
+    <None Include="forktest.asm" />
+    <None Include="grep.asm" />
+    <None Include="init.asm" />
+    <None Include="initcode.asm" />
+    <None Include="initcode.S" />
+    <None Include="kernel.asm" />
+    <None Include="kill.asm" />
+    <None Include="ln.asm" />
+    <None Include="ls.asm" />
+    <None Include="mkdir.asm" />
+    <None Include="rm.asm" />
+    <None Include="sh.asm" />
+    <None Include="stressfs.asm" />
+    <None Include="swtch.S" />
+    <None Include="trapasm.S" />
+    <None Include="usertests.asm" />
+    <None Include="usys.S" />
+    <None Include="vectors.S" />
+    <None Include="wc.asm" />
+    <None Include="zombie.asm" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
