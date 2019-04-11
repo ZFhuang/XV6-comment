@@ -1,4 +1,5 @@
 // Shell.
+//Shell，操作系统的套壳，用于处理用户输入与系统调用的联系
 
 #include "types.h"
 #include "user.h"
@@ -19,14 +20,15 @@ struct cmd {
 
 struct execcmd {
 	int type;
-	//两种参数
+	//参数的字符串起点
 	char *argv[MAXARGS];
+	//参数的终点
 	char *eargv[MAXARGS];
 };
 
 struct redircmd {
 	int type;
-	//重定向cmd
+	//cmd本体
 	struct cmd *cmd;
 	//重定向文件
 	char *file;
@@ -64,6 +66,7 @@ struct cmd *parsecmd(char*);
 void
 runcmd(struct cmd *cmd)
 {
+	//管道p
 	int p[2];
 	struct backcmd *bcmd;
 	struct execcmd *ecmd;
@@ -92,13 +95,16 @@ runcmd(struct cmd *cmd)
 
 	case REDIR:
 		rcmd = (struct redircmd*)cmd;
+		//先关闭关闭标准I/O口
 		close(rcmd->fd);
-		//打开重定向文件
+		//然后打开重定向文件，此时文件会被指向当前最小描述符
+		//也就是会指向上一行释放的IO口，这样就完成了替代
 		if (open(rcmd->file, rcmd->mode) < 0) {
 			printf(2, "open %s failed\n", rcmd->file);
 			exit();
 		}
-		//继续递归run
+		//用run继续递归的时候IO都会指向刚才open的文件了
+		//如果想要恢复只要再close和open一次console即可
 		runcmd(rcmd->cmd);
 		break;
 
@@ -119,7 +125,7 @@ runcmd(struct cmd *cmd)
 		if (pipe(p) < 0)
 			panic("pipe");
 		if (fork1() == 0) {
-			//在子进程中run管道左侧
+			//创建子进程，在子进程中run管道左侧
 			close(1);
 			//dup复制文件描述符到p，然后关闭管道
 			dup(p[1]);
@@ -129,7 +135,7 @@ runcmd(struct cmd *cmd)
 			runcmd(pcmd->left);
 		}
 		if (fork1() == 0) {
-			//run管道右侧
+			//再创建一个子进程处理右侧
 			close(0);
 			dup(p[0]);
 			close(p[0]);
@@ -146,6 +152,7 @@ runcmd(struct cmd *cmd)
 	case BACK:
 		bcmd = (struct backcmd*)cmd;
 		if (fork1() == 0)
+			//后台运行(再新建进程
 			runcmd(bcmd->cmd);
 		break;
 	}
@@ -155,10 +162,10 @@ runcmd(struct cmd *cmd)
 int
 getcmd(char *buf, int nbuf)
 {
-	//读取cmd的内容
 	printf(2, "$ ");
 	//初始化内存
 	memset(buf, 0, nbuf);
+	//读取cmd的内容
 	gets(buf, nbuf);
 	//若第一个字符是结束符返回-1
 	if (buf[0] == 0) // EOF
@@ -206,7 +213,7 @@ main(void)
 void
 panic(char *s)
 {
-	//panic打印内容并退出
+	//恐慌panic打印内容并退出
 	printf(2, "%s\n", s);
 	exit();
 }
@@ -312,7 +319,7 @@ gettoken(char **ps, char *es, char **q, char **eq)
 	//找到第一个非空符
 	while (s < es && strchr(whitespace, *s))
 		s++;
-	//指针非空时赋值这个字符，相当于返回实际找到的字符
+	//指针非空时赋值这个字符，相当于返回实际找到的字符子串的起点
 	if (q)
 		*q = s;
 	//返回值为此字符的int
@@ -340,16 +347,16 @@ gettoken(char **ps, char *es, char **q, char **eq)
 	default:
 		//其他符号返回a
 		ret = 'a';
-		//找到下个非空且非命令符的字符
+		//找到下个空字符的位置
 		while (s < es && !strchr(whitespace, *s) && !strchr(symbols, *s))
 			s++;
 		break;
 	}
-	//若需要保存移动后的位置则保留在eq中
+	//这样这里相当于保存了一个参数的终点，与q一切使用
 	if (eq)
 		*eq = s;
 
-	//读取下一个非空字符并定为新的子串起点
+	//读取下一个非空字符并定为新的子串起点，也就是可以用于寻找下个参数字符串了
 	while (s < es && strchr(whitespace, *s))
 		s++;
 	*ps = s;
@@ -379,7 +386,7 @@ struct cmd *parsepipe(char**, char*);
 struct cmd *parseexec(char**, char*);
 struct cmd *nulterminate(struct cmd*);
 
-//分析控制台输入
+//分析控制台输入的总函数
 struct cmd*
 	parsecmd(char *s)
 {
@@ -393,44 +400,45 @@ struct cmd*
 		printf(2, "leftovers: %s\n", s);
 		panic("syntax");
 	}
-	//终止
+	//终止得到的cmd的递归
 	nulterminate(cmd);
 	return cmd;
 }
 
-//分析多行
+//分析被拆出来的行
 struct cmd*
 	parseline(char **ps, char *es)
 {
 	struct cmd *cmd;
 
 	cmd = parsepipe(ps, es);	//利用parsepipe来分析管道
-	while (peek(ps, es, "&")) {
-		gettoken(ps, es, 0, 0);
+	while (peek(ps, es, "&")) {	//发现此段命令的尾部是&时，代表是后台运行命令
+		gettoken(ps, es, 0, 0);	//取出&
 		cmd = backcmd(cmd);
 	}
-	if (peek(ps, es, ";")) {
-		gettoken(ps, es, 0, 0);
+	if (peek(ps, es, ";")) {	//发现分号;时，代表是多命令列表串联
+		gettoken(ps, es, 0, 0);	//取掉分号，剩余部分递归分析
 		cmd = listcmd(cmd, parseline(ps, es));
 	}
 	return cmd;
 }
 
-//分析管道“|”
+//分析管道“|”，管道指左命令的输出成为右命令的输入
 struct cmd*
 	parsepipe(char **ps, char *es)
 {
 	struct cmd *cmd;
 
-	cmd = parseexec(ps, es);	//利用parseexec来分析运行
-	if (peek(ps, es, "|")) {
-		gettoken(ps, es, 0, 0);
-		cmd = pipecmd(cmd, parsepipe(ps, es));
+	cmd = parseexec(ps, es);	//利用parseexec来分析运行，先分析左命令
+	if (peek(ps, es, "|")) {	//peek到|符时
+		gettoken(ps, es, 0, 0);	//去掉|符
+		cmd = pipecmd(cmd, parsepipe(ps, es));	//分析右命令
 	}
+	//否则便是目前还没有用到管道，直接返回
 	return cmd;
 }
 
-//分析重定向“<,>,>>”
+//分析重定向“<,>,>>”部分
 struct cmd*
 	parseredirs(struct cmd *cmd, char **ps, char *es)
 {
@@ -438,18 +446,23 @@ struct cmd*
 	char *q, *eq;
 
 	while (peek(ps, es, "<>")) {
+		//发现重定向符时，先取掉(gettoken可以取掉>>返回+)
 		tok = gettoken(ps, es, 0, 0);
+		//确认重定向符后的下一个是普通字符，代表是有正确的重定向格式的
 		if (gettoken(ps, es, &q, &eq) != 'a')
 			panic("missing file for redirection");
+		//根据刚才取掉的不同的定向符来处理
 		switch (tok) {
 		case '<':
+			//输入重定向
 			cmd = redircmd(cmd, q, eq, O_RDONLY, 0);
 			break;
 		case '>':
+			//输出重定向
 			cmd = redircmd(cmd, q, eq, O_WRONLY | O_CREATE, 1);
 			break;
-		case '+':  // >>
-			//与>相同
+		case '+':  
+			// >>在这与单个>一样都是输出重定向(linux里表示追加模式)
 			cmd = redircmd(cmd, q, eq, O_WRONLY | O_CREATE, 1);
 			break;
 		}
@@ -457,7 +470,7 @@ struct cmd*
 	return cmd;
 }
 
-//分析块
+//分析括号括起来的优先级块
 struct cmd*
 	parseblock(char **ps, char *es)
 {
@@ -480,7 +493,7 @@ struct cmd*
 	return cmd;
 }
 
-//分析执行
+//分析真正的执行部分参数列表
 struct cmd*
 	parseexec(char **ps, char *es)
 {
@@ -489,29 +502,37 @@ struct cmd*
 	struct execcmd *cmd;
 	struct cmd *ret;
 
-	//若首个有效字符是左括号"("
+	//若首个有效字符peek到了左括号"("，说明可能有指令块，进行块分析
 	if (peek(ps, es, "("))
 		return parseblock(ps, es);
 
-	//创建cmd
+	//申请并创建cmd
 	ret = execcmd();
 	cmd = (struct execcmd*)ret;
 
 	argc = 0;
-	//分析重定向
+	//分析重定向因素
 	ret = parseredirs(ret, ps, es);
+	//当没有peek到管道符，块的右括号，后台符，列表符时
 	while (!peek(ps, es, "|)&;")) {
+		//返回0代表s是空串了，可以跳出，每次token都会将指针往下个参数移动
 		if ((tok = gettoken(ps, es, &q, &eq)) == 0)
 			break;
+		//tok==a表示读取到的是普通字符，是正常的，不然会报格式错误
 		if (tok != 'a')
 			panic("syntax");
+		//q是此参数的起点，eq是终点
 		cmd->argv[argc] = q;
 		cmd->eargv[argc] = eq;
+		//参数计数
 		argc++;
+		//太多参数
 		if (argc >= MAXARGS)
 			panic("too many args");
+		//再判断此参数内是否需要重定向
 		ret = parseredirs(ret, ps, es);
 	}
+	//收尾
 	cmd->argv[argc] = 0;
 	cmd->eargv[argc] = 0;
 	return ret;
@@ -548,8 +569,8 @@ struct cmd*
 		*rcmd->efile = 0;
 		break;
 
-	//以下都是递归
 	case PIPE:
+		//以下都是递归
 		pcmd = (struct pipecmd*)cmd;
 		nulterminate(pcmd->left);
 		nulterminate(pcmd->right);
