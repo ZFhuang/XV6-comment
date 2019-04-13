@@ -127,7 +127,7 @@ runcmd(struct cmd *cmd)
 		if (fork1() == 0) {
 			//创建子进程，在子进程中run管道左侧
 			close(1);
-			//dup复制文件描述符到p，然后关闭管道
+			//dup复制p的文件描述符到标准输出口，然后关闭管道
 			dup(p[1]);
 			close(p[0]);
 			close(p[1]);

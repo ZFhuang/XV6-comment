@@ -43,13 +43,16 @@ _start = V2P_WO(entry)
 # Entering xv6 on boot processor, with paging off.
 .globl entry
 entry:
+  //cr4寄存器设置会启动4MB的分页配置
   # Turn on page size extension for 4Mbyte pages
   movl    %cr4, %eax
   orl     $(CR4_PSE), %eax
   movl    %eax, %cr4
+  //设置页表
   # Set page directory
   movl    $(V2P_WO(entrypgdir)), %eax
   movl    %eax, %cr3
+  //设置cr0可以开启分页功能
   # Turn on paging.
   movl    %cr0, %eax
   orl     $(CR0_PG|CR0_WP), %eax
