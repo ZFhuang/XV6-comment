@@ -6,6 +6,7 @@
 
 
 # exec(init, argv)
+//µ÷ÓÃinit
 .globl start
 start:
   pushl $argv

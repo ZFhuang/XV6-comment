@@ -126,6 +126,7 @@ runcmd(struct cmd *cmd)
 			panic("pipe");
 		if (fork1() == 0) {
 			//创建子进程，在子进程中run管道左侧
+			//只要还有指针指着就不会真的关闭，只是关掉了多余的
 			close(1);
 			//dup复制p的文件描述符到标准输出口，然后关闭管道
 			dup(p[1]);

@@ -18,6 +18,7 @@ movw    %ax, %ds             # ->Data Segment
 movw    %ax, %es             # ->Extra Segment
 movw    %ax, %ss             # ->Stack Segment
 
+//Gate-A20会使得A20地址线被永远置零
 # Physical address line A20 is tied to zero so that the first PCs
 # with 2 MB would run software that assumed 1 MB.Undo that.
 //第一个等待
@@ -45,7 +46,7 @@ jnz     seta20.2
 
 //空闲时将0xdf放入寄存器，含义是打开端口
 movb    $0xdf, %al               # 0xdf->port 0x60
-//向读写端口0x60中写信息0xdf，这样就打开了GateA20的开关
+//向读写端口0x60中写信息0xdf，这样就打开了GateA20的开关，相当于电路连着
 outb    %al, $0x60
 
 # Switch from real to protected mode.Use a bootstrap GDT that makes
