@@ -11,6 +11,7 @@
 #include "x86.h"
 
 // Local APIC registers, divided by 4 for use as uint[] indices.
+//本地APIC的可编程寄存器，用来控制中断
 #define ID      (0x0020/4)   // ID
 #define VER     (0x0030/4)   // Version
 #define TPR     (0x0080/4)   // Task Priority
@@ -102,6 +103,7 @@ lapicid(void)
 {
   if (!lapic)
     return 0;
+  //返回ID，每个CPU都有自己的ID
   return lapic[ID] >> 24;
 }
 

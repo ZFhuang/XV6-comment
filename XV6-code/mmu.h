@@ -2,6 +2,7 @@
 // x86 memory management unit (MMU).
 
 // Eflags register
+//中断打开时
 #define FL_IF           0x00000200      // Interrupt Enable
 
 // Control Register flags

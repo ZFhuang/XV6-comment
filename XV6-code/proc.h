@@ -1,15 +1,17 @@
 // Per-CPU state
+//各个CPU的状态结构体
 struct cpu {
-  uchar apicid;                // Local APIC ID
-  struct context *scheduler;   // swtch() here to enter scheduler
+  uchar apicid;                // Local APIC ID，CPU的本地APIC
+  struct context *scheduler;   // swtch() here to enter scheduler 调度器的下一个上下文
   struct taskstate ts;         // Used by x86 to find stack for interrupt
   struct segdesc gdt[NSEGS];   // x86 global descriptor table
-  volatile uint started;       // Has the CPU started?
-  int ncli;                    // Depth of pushcli nesting.
-  int intena;                  // Were interrupts enabled before pushcli?
+  volatile uint started;       // Has the CPU started?，是否启动？
+  int ncli;                    // Depth of pushcli nesting.当前cli的深度，和同步锁有关，越多个锁要求深度就越深
+  int intena;                  // Were interrupts enabled before pushcli?pushcli操作前中断是否开启着呢？
   struct proc *proc;           // The process running on this cpu or null
 };
 
+//8核
 extern struct cpu cpus[NCPU];
 extern int ncpu;
 
@@ -35,6 +37,7 @@ struct context {
 enum procstate { UNUSED, EMBRYO, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
 
 // Per-process state
+//进程PCB
 struct proc {
   uint sz;                     // Size of process memory (bytes)
   pde_t* pgdir;                // Page table

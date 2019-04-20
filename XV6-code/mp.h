@@ -20,6 +20,7 @@ struct mpconf {         // configuration table header
   uint *oemtable;               // OEM table pointer
   ushort oemlength;             // OEM table length
   ushort entry;                 // entry count
+  //高级可编程中断控制器,本地apic位置
   uint *lapicaddr;              // address of local APIC
   ushort xlength;               // extended table length
   uchar xchecksum;              // extended table checksum

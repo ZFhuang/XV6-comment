@@ -6,6 +6,8 @@
 # a struct context, and save its address in *old.
 # Switch stacks to new and pop previously-saved registers.
 
+//上下文切换器
+
 .globl swtch
 swtch:
   movl 4(%esp), %eax

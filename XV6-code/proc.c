@@ -8,6 +8,7 @@
 #include "spinlock.h"
 
 struct {
+	//进程表结构体
 	struct spinlock lock;
 	struct proc proc[NPROC];
 } ptable;
@@ -35,6 +36,7 @@ cpuid() {
 
 // Must be called with interrupts disabled to avoid the caller being
 // rescheduled between reading lapicid and running through the loop.
+//返回现在在用的CPU
 struct cpu*
 	mycpu(void)
 {
@@ -48,6 +50,7 @@ struct cpu*
 	// a reverse map, or reserve a register to store &cpus[i].
 	for (i = 0; i < ncpu; ++i) {
 		if (cpus[i].apicid == apicid)
+			//找到apicid==当前ID的cpu返回
 			return &cpus[i];
 	}
 	panic("unknown apicid\n");
@@ -55,7 +58,7 @@ struct cpu*
 
 // Disable interrupts so that we are not rescheduled
 // while reading proc from the cpu structure
-//PCB的结构
+//返回现在的proc
 struct proc*
 	myproc(void) {
 	struct cpu *c;
@@ -335,75 +338,112 @@ wait(void)
 //  - swtch to start running that process
 //  - eventually that process transfers control
 //      via swtch back to the scheduler.
+//调度器是一个暂时进入的新线程，通过切换上下文进来的
+//调度本质上就是选择要给CPU运行的合适的上下文
+//调度器线程是永不返回的，会持续进行选择新进程，通过切上下文来保持内部信息
 void
 scheduler(void)
 {
+	//先得到目前的cpu，这里只会进入一次
 	struct proc *p;
 	struct cpu *c = mycpu();
+	//cpu的当前进程设0初始化，
 	c->proc = 0;
 
 	for (;;) {
 		// Enable interrupts on this processor.
+		//要在调度时打开中断，这是为了防止当所有进程都在等待IO时，由于关闭中断而产生的死锁问题
 		sti();
 
 		// Loop over process table looking for process to run.
+		//求一个锁，此时是调度器线程的锁，和外面的不一样所以不会panic
 		acquire(&ptable.lock);
 		for (p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
+			//有点像fork在找进程PCB表，只不过这次是要找到第一个RUNNABLE的进程
+			//这里也说明了xv6的调度算法其实就是简单的FCFS
 			if (p->state != RUNNABLE)
 				continue;
 
 			// Switch to chosen process.  It is the process's job
 			// to release ptable.lock and then reacquire it
 			// before jumping back to us.
+			//将当前进程标识选为找到的第一个RUNNABLE进程
 			c->proc = p;
+			//切换到进程页表
 			switchuvm(p);
+			//设置接下来要运行的这个进程是RUNNING
 			p->state = RUNNING;
 
+			//在这里调度器再将上下文改到这个选中的进程的上下文中同时保存了调度器的上下文
+			//这样就通过切换上下文在保留调度器循环暂停的情况下把CPU交给了新进程
 			swtch(&(c->scheduler), p->context);
+			//回到这里的时候，因为调度器是运行在内核的，切换到内核页表
 			switchkvm();
 
 			// Process is done running for now.
 			// It should have changed its p->state before coming back.
+			//cpu的当前进程又设0了，这样就恢复到了循环开始的时候，继续下个调度
 			c->proc = 0;
 		}
+		//调度器退出，释放锁
 		release(&ptable.lock);
 
 	}
 }
 
 // Enter scheduler.  Must hold only ptable.lock
+//只有当获得了进程锁时才能进入调度器
 // and have changed proc->state. Saves and restores
+//且要改变了RUNNING的进程
 // intena because intena is a property of this
+//需要保存和恢复中断标识？
 // kernel thread, not this CPU. It should
+//因为这个中断标识的可能是这个内核调度器线程而非原先进程的
 // be proc->intena and proc->ncli, but that would
 // break in the few places where a lock is held but
 // there's no process.
+//当有些进程没有锁时会出问题
 void
 sched(void)
 {
 	int intena;
 	struct proc *p = myproc();
 
+	//再检测下是否保持着这个锁
 	if (!holding(&ptable.lock))
 		panic("sched ptable.lock");
+	//只有第一层cli才是得到了锁的调用，其它的都在队列里还没轮到
 	if (mycpu()->ncli != 1)
 		panic("sched locks");
+	//必须是停止运行的进程，例如RUNNABLE
 	if (p->state == RUNNING)
 		panic("sched running");
+	//中断关闭时
 	if (readeflags()&FL_IF)
 		panic("sched interruptible");
+	//保留原先的中断标识
 	intena = mycpu()->intena;
+	//参数里有此进程的寄存器上下文和这个CPU的调度器上下文
+	//在这要来改变这个进程的上下文，将上下文改为scheduler的
+	//也就是通过暂时进入了调度器线程
 	swtch(&p->context, mycpu()->scheduler);
+	//恢复中断标识
 	mycpu()->intena = intena;
 }
 
 // Give up the CPU for one scheduling round.
+//时间片用完时让这个进程让步CPU的调度周期
 void
 yield(void)
 {
+	//请求进程锁，因为要来修改进程信息了，已经被锁的情况会panic
+	//请求锁是因为下面需要修改到proc了
 	acquire(&ptable.lock);  //DOC: yieldlock
+	//将状态让出，当前的进程设置为RUNNABLE
 	myproc()->state = RUNNABLE;
+	//主动调用触发调度
 	sched();
+	//释放锁
 	release(&ptable.lock);
 }
 

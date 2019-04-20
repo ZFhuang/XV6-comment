@@ -91,11 +91,15 @@ ltr(ushort sel)
   asm volatile("ltr %0" : : "r" (sel));
 }
 
+//读取标识
 static inline uint
-readeflags(void)
+readeflags(void)	
 {
+  //读取标识
   uint eflags;
+  //插入汇编
   asm volatile("pushfl; popl %0" : "=r" (eflags));
+  //返回标识
   return eflags;
 }
 
@@ -105,18 +109,21 @@ loadgs(ushort v)
   asm volatile("movw %0, %%gs" : : "r" (v));
 }
 
+//锁住中断？
 static inline void
 cli(void)
 {
   asm volatile("cli");
 }
 
+//打开中断？
 static inline void
 sti(void)
 {
   asm volatile("sti");
 }
 
+//这啥嘞？
 static inline uint
 xchg(volatile uint *addr, uint newval)
 {

@@ -149,6 +149,7 @@ kvmalloc(void)
 
 // Switch h/w page table register to the kernel-only page table,
 // for when no process is running.
+//切换到内核页表
 void
 switchkvm(void)
 {
@@ -156,6 +157,7 @@ switchkvm(void)
 }
 
 // Switch TSS and h/w page table to correspond to process p.
+//修改内存页表？
 void
 switchuvm(struct proc *p)
 {
