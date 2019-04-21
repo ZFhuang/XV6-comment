@@ -19,6 +19,7 @@ static void consputc(int);
 
 static int panicked = 0;
 
+//控制台console
 static struct {
   struct spinlock lock;
   int locking;
@@ -103,22 +104,30 @@ cprintf(char *fmt, ...)
     release(&cons.lock);
 }
 
+//出错时调用
 void
 panic(char *s)
 {
   int i;
   uint pcs[10];
 
+  //先停止中断
   cli();
+  //然后关闭控制台的写入锁
   cons.locking = 0;
   // use lapiccpunum so that we can call panic from mycpu()
+  //lapic 高级可编程中断控制器
+  //打印问题
   cprintf("lapicid %d: panic: ", lapicid());
   cprintf(s);
   cprintf("\n");
+  //打印每个调用的进程pc
   getcallerpcs(&s, pcs);
   for(i=0; i<10; i++)
     cprintf(" %p", pcs[i]);
+  //暂停其他cpu
   panicked = 1; // freeze other CPU
+  //循环卡死
   for(;;)
     ;
 }

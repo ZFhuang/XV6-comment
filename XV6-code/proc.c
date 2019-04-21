@@ -188,6 +188,7 @@ growproc(int n)
 // Create a new process copying p as the parent.
 // Sets up stack to return as if from system call.
 // Caller must set state of returned proc to RUNNABLE.
+//分支出一个新的进程
 int
 fork(void)
 {
@@ -360,7 +361,7 @@ scheduler(void)
 		acquire(&ptable.lock);
 		for (p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
 			//有点像fork在找进程PCB表，只不过这次是要找到第一个RUNNABLE的进程
-			//这里也说明了xv6的调度算法其实就是简单的FCFS
+			//这里也说明了xv6的调度算法其实就是简单的轮转法
 			if (p->state != RUNNABLE)
 				continue;
 
@@ -385,7 +386,9 @@ scheduler(void)
 			//cpu的当前进程又设0了，这样就恢复到了循环开始的时候，继续下个调度
 			c->proc = 0;
 		}
-		//调度器退出，释放锁
+		//调度器完成了一圈进程表的遍历，释放锁然后继续循环
+		//这个循环是没有返回值，永无休止的
+		//释放锁是因为不应该让一个闲置状态的调度器一直把持着进程锁
 		release(&ptable.lock);
 
 	}
@@ -418,7 +421,7 @@ sched(void)
 	//必须是停止运行的进程，例如RUNNABLE
 	if (p->state == RUNNING)
 		panic("sched running");
-	//中断关闭时
+	//中断关闭时，这句还不是很明白(?)
 	if (readeflags()&FL_IF)
 		panic("sched interruptible");
 	//保留原先的中断标识
@@ -432,7 +435,7 @@ sched(void)
 }
 
 // Give up the CPU for one scheduling round.
-//时间片用完时让这个进程让步CPU的调度周期
+//让这个进程让步CPU的调度周期
 void
 yield(void)
 {
@@ -470,6 +473,8 @@ forkret(void)
 
 // Atomically release lock and sleep on chan.
 // Reacquires lock when awakened.
+//自动地释放锁并将进程放入睡眠等待队列中
+//要求此进程必须拥有进程锁防止wakeup
 void
 sleep(void *chan, struct spinlock *lk)
 {
@@ -478,6 +483,7 @@ sleep(void *chan, struct spinlock *lk)
 	if (p == 0)
 		panic("sleep");
 
+	//没有锁时报错
 	if (lk == 0)
 		panic("sleep without lk");
 
@@ -487,29 +493,41 @@ sleep(void *chan, struct spinlock *lk)
 	// guaranteed that we won't miss any wakeup
 	// (wakeup runs with ptable.lock locked),
 	// so it's okay to release lk.
+	//强制要求进程带锁而入因为这样可以防止我们错过release前的wakeup
+	//在有锁的情况下wakeup无法在这启动
 	if (lk != &ptable.lock) {  //DOC: sleeplock0
+		//由于如果带进来的锁是进程表锁，那么不能随便释放它
+		//当不是进程表锁时，可以放心要求一个进程表锁保持住无法wakeup的状态
 		acquire(&ptable.lock);  //DOC: sleeplock1
+		//因为有了进程表了就可以放心释放原来的锁然后可以修改这个进程
 		release(lk);
 	}
 	// Go to sleep.
+	//将其放入睡眠队列
 	p->chan = chan;
+	//转变状态
 	p->state = SLEEPING;
 
+	//类似yield主动调用调度
 	sched();
 
-	// Tidy up.
+	// Tidy up. 收拾，把它从睡眠队列移出
 	p->chan = 0;
 
 	// Reacquire original lock.
 	if (lk != &ptable.lock) {  //DOC: sleeplock2
+		//对称地释放进程表锁要求进程锁
 		release(&ptable.lock);
 		acquire(lk);
 	}
+	//本来就是进程表锁时跳过(什么情况下带入的是进程表锁?)
 }
 
 //PAGEBREAK!
 // Wake up all processes sleeping on chan.
 // The ptable lock must be held.
+//唤醒操作的真正地方，必须要有锁
+//唤醒此睡眠队列中的所有进程
 static void
 wakeup1(void *chan)
 {
@@ -517,15 +535,20 @@ wakeup1(void *chan)
 
 	for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
 		if (p->state == SLEEPING && p->chan == chan)
+			//找到进程表中处于睡眠且处于队列中的进程，都修改为RUNNABLE
 			p->state = RUNNABLE;
 }
 
 // Wake up all processes sleeping on chan.
+//唤醒睡眠队列
 void
 wakeup(void *chan)
 {
+	//由于要修改进程状态自然需要进程表锁
 	acquire(&ptable.lock);
+	//调用上面的wakeup1来做真正的处理
 	wakeup1(chan);
+	//释放
 	release(&ptable.lock);
 }
 
@@ -556,9 +579,12 @@ kill(int pid)
 // Print a process listing to console.  For debugging.
 // Runs when user types ^P on console.
 // No lock to avoid wedging a stuck machine further.
+//Ctrl+P来打印运行中的进程，没有申请进程来防止卡住机器
 void
 procdump(void)
 {
+	//将进程状态符转为字符串
+	//这个语法？？
 	static char *states[] = {
 	[UNUSED]    "unused",
 	[EMBRYO]    "embryo",
@@ -567,22 +593,31 @@ procdump(void)
 	[RUNNING]   "run   ",
 	[ZOMBIE]    "zombie"
 	};
+	//几个暂存
 	int i;
 	struct proc *p;
 	char *state;
 	uint pc[10];
 
 	for (p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
+		//循环遍历进程表
 		if (p->state == UNUSED)
+			//未使用的进程无需打印
 			continue;
+		//state>0不是UNUSED，< NELEM(states)范围内，states[p->state]状态存在
 		if (p->state >= 0 && p->state < NELEM(states) && states[p->state])
+			//得到对应的字符串
 			state = states[p->state];
 		else
+			//否则这个状态是在预计外，没有对应的字符串
 			state = "???";
+		//将进程pid，状态和进程名打印
 		cprintf("%d %s %s", p->pid, state, p->name);
 		if (p->state == SLEEPING) {
+			//得到SLEEPING进程的调用者(为啥找不到定义)
 			getcallerpcs((uint*)p->context->ebp + 2, pc);
 			for (i = 0; i < 10 && pc[i] != 0; i++)
+				//打印出每个调用的pc
 				cprintf(" %p", pc[i]);
 		}
 		cprintf("\n");
