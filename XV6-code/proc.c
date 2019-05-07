@@ -421,10 +421,10 @@ sched(void)
 	//必须是停止运行的进程，例如RUNNABLE
 	if (p->state == RUNNING)
 		panic("sched running");
-	//中断关闭时，这句还不是很明白(?)
+	//读取eflags的一个位，这个位表示了中断是否打开着
 	if (readeflags()&FL_IF)
 		panic("sched interruptible");
-	//保留原先的中断标识
+	//保留原先(pushcli之前)的中断标识，且这是属于这个cpu的，各有各的可能
 	intena = mycpu()->intena;
 	//参数里有此进程的寄存器上下文和这个CPU的调度器上下文
 	//在这要来改变这个进程的上下文，将上下文改为scheduler的

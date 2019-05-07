@@ -91,15 +91,14 @@ ltr(ushort sel)
   asm volatile("ltr %0" : : "r" (sel));
 }
 
-//读取标识
+//读取中断标识
 static inline uint
 readeflags(void)	
 {
-  //读取标识
+  //读
   uint eflags;
-  //插入汇编
   asm volatile("pushfl; popl %0" : "=r" (eflags));
-  //返回标识
+  //返回
   return eflags;
 }
 

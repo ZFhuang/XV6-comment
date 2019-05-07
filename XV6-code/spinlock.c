@@ -39,15 +39,18 @@ acquire(struct spinlock *lk)
 		panic("acquire");
 
 	// The xchg is atomic.
+	//xchg是386的一个原子操作
 	while (xchg(&lk->locked, 1) != 0)
 		;
 
 	// Tell the C compiler and the processor to not move loads or stores
 	// past this point, to ensure that the critical section's memory
 	// references happen after the lock is acquired.
+	//限制编译器不要优化下面的代码防止读取和写入顺序错乱
 	__sync_synchronize();
 
-	// Record info about lock acquisition for debugging.记录下这个锁的归属
+	// Record info about lock acquisition for debugging.
+	//记录下这个锁的归属
 	lk->cpu = mycpu();
 	//记录下这个锁住的CPU的程序计数器PC
 	getcallerpcs(&lk, lk->pcs);
@@ -69,12 +72,28 @@ release(struct spinlock *lk)
 	// section are visible to other cores before the lock is released.
 	// Both the C compiler and the hardware may re-order loads and
 	// stores; __sync_synchronize() tells them both not to.
+	//这个函数下面的代码声明不要让编译器优化
 	__sync_synchronize();
 
 	// Release the lock, equivalent to lk->locked = 0.
 	// This code can't use a C assignment, since it might
 	// not be atomic. A real OS would use C atomics here.
+	//置0来释放锁
 	asm volatile("movl $0, %0" : "+m" (lk->locked) : );
+
+	/*
+	rev7
+	// The xchg serializes, so that reads before release are 
+	// not reordered after it.  The 1996 PentiumPro manual (Volume 3,
+	// 7.2) says reads can be carried out speculatively and in
+	// any order, which implies we need to serialize here.
+	// But the 2007 Intel 64 Architecture Memory Ordering White
+	// Paper says that Intel 64 and IA-32 will not move a load
+	// after a store. So lock->locked = 0 would work here.
+	// The xchg being asm volatile ensures gcc emits it after
+	// the above assignments (and after the critical section).
+	xchg(&lk->locked, 0);
+	*/
 
 	//通过popcli来减少锁的计数，需要和push成对
 	popcli();
