@@ -63,6 +63,8 @@ struct segdesc {
 #define STS_IG32    0xE     // 32-bit Interrupt Gate
 #define STS_TG32    0xF     // 32-bit Trap Gate
 
+//虚拟地址的映射关系，由页目录表(一级页表)，页表(二级页表)和页内偏移组成
+//低12位是页内偏移
 // A virtual address 'la' has a three-part structure as follows:
 //
 // +--------10------+-------10-------+---------12----------+
@@ -72,9 +74,11 @@ struct segdesc {
 //  \--- PDX(va) --/ \--- PTX(va) --/
 
 // page directory index
+//页目录表的索引(二级页表的第一级)，右移22(12+10)位后掩码取低10位，也就是取得原地址的高10位
 #define PDX(va)         (((uint)(va) >> PDXSHIFT) & 0x3FF)
 
 // page table index
+//页表索引，右移12位取低10位，也就是取得原地址的中间10位
 #define PTX(va)         (((uint)(va) >> PTXSHIFT) & 0x3FF)
 
 // construct virtual address from indexes and offset

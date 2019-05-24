@@ -7,7 +7,10 @@
 #include "proc.h"
 #include "elf.h"
 
+//为了处理进程的地址翻译问题，每个进程需要有一个页表来实现其虚拟内存地址到物理地址的转换
+
 extern char data[];  // defined by kernel.ld
+//pde_t是uint格式的，kpgdir是个指针，指向当前内核进程的页表
 pde_t *kpgdir;  // for use in scheduler()
 
 //设置CPU的内核段描述符
@@ -30,6 +33,8 @@ seginit(void)
 	lgdt(c->gdt, sizeof(c->gdt));
 }
 
+//PTE即page table entries，页表项
+//此函数返回PTE与虚拟地址va有关的地址，当alloc不等于0时创建所需的页表页
 // Return the address of the PTE in page table pgdir
 // that corresponds to virtual address va.  If alloc!=0,
 // create any required page table pages.
@@ -81,13 +86,20 @@ mappages(pde_t *pgdir, void *va, uint size, uint pa, int perm)
 	return 0;
 }
 
-//用页表来给每个进程分配一份虚拟地址
+//每个进程都有自己的一个页表，然后多余一个页表是当内核没有进程在运行时映射内核用
 // There is one page table per process, plus one that's used when
+//内核平时是使用当前正在运行的进程的页表作为自己的页表的
 // a CPU is not running any process (kpgdir). The kernel uses the
 // current process's page table during system calls and interrupts;
+//页表保护位防止用户代码访问到内核映射
 // page protection bits prevent user code from using the kernel's
 // mappings.
 //
+//每一份页表的初始化都大概是0..KERNBASE映射给用户内存
+//KERNBASE..KERNBASE+EXTMEM给IO
+//KERNBASE+EXTMEM..data给内核指令等
+//data..KERNBASE+PHYSTOP空闲
+//0xfe000000..0直接映射给驱动
 // setupkvm() and exec() set up every page table like this:
 //
 //   0..KERNBASE: user memory (text+data+stack+heap), mapped to
@@ -157,13 +169,15 @@ switchkvm(void)
 }
 
 // Switch TSS and h/w page table to correspond to process p.
-//修改内存页表？
+//切换当前的进程
 void
 switchuvm(struct proc *p)
 {
 	if (p == 0)
+		//是否有进程的判断
 		panic("switchuvm: no process");
 	if (p->kstack == 0)
+		//是否有
 		panic("switchuvm: no kstack");
 	if (p->pgdir == 0)
 		panic("switchuvm: no pgdir");
