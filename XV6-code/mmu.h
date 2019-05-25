@@ -1,5 +1,6 @@
 // This file contains definitions for the
 // x86 memory management unit (MMU).
+//地址转换管理单元MMU
 
 // Eflags register
 //中断打开时
@@ -82,33 +83,43 @@ struct segdesc {
 #define PTX(va)         (((uint)(va) >> PTXSHIFT) & 0x3FF)
 
 // construct virtual address from indexes and offset
+//综合索引与偏移
 #define PGADDR(d, t, o) ((uint)((d) << PDXSHIFT | (t) << PTXSHIFT | (o)))
 
 // Page directory and page table constants.
-#define NPDENTRIES      1024    // # directory entries per page directory
-#define NPTENTRIES      1024    // # PTEs per page table
-#define PGSIZE          4096    // bytes mapped by a page
+//页目录与页表的一些常量
+#define NPDENTRIES      1024    // # directory entries per page directory目录数量
+#define NPTENTRIES      1024    // # PTEs per page table页面数量
+#define PGSIZE          4096    // bytes mapped by a page页的长度
 
 #define PTXSHIFT        12      // offset of PTX in a linear address
+//页表索引在虚拟地址的偏移量
 #define PDXSHIFT        22      // offset of PDX in a linear address
+//页目录在虚拟地址的偏移量
 
+//上取整到页起点
 #define PGROUNDUP(sz)  (((sz)+PGSIZE-1) & ~(PGSIZE-1))
+//下取整到页起点
 #define PGROUNDDOWN(a) (((a)) & ~(PGSIZE-1))
 
 // Page table/directory entry flags.
-#define PTE_P           0x001   // Present
-#define PTE_W           0x002   // Writeable
-#define PTE_U           0x004   // User
-#define PTE_PS          0x080   // Page Size
+//页表的几个权限标识flags
+#define PTE_P           0x001   // Present是否为当前
+#define PTE_W           0x002   // Writeable是否可写
+#define PTE_U           0x004   // User用户
+#define PTE_PS          0x080   // Page Size页面大小
 
 // Address in page table or page directory entry
+//取页表项的高20位，是页面的物理页号(物理地址的高20位)
 #define PTE_ADDR(pte)   ((uint)(pte) & ~0xFFF)
+//取页表项的低12位，是页面的标识位
 #define PTE_FLAGS(pte)  ((uint)(pte) &  0xFFF)
 
 #ifndef __ASSEMBLER__
 typedef uint pte_t;
 
 // Task state segment format
+//任务段的格式，包含大量寄存器的保存
 struct taskstate {
   uint link;         // Old ts selector
   uint esp0;         // Stack pointers and segment selectors
