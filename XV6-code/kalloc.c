@@ -16,7 +16,7 @@ extern char end[]; // first address after kernel loaded from ELF file
 				   //内核代码读取完成后的第一个空闲地址
 
 struct run {
-	//链，就是一个不断指向下一页的指针
+	//链，就是一个不断指向下一页的指针(但是为什么是虚拟地址？)
 	struct run *next;
 };
 

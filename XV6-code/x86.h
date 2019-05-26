@@ -144,6 +144,7 @@ rcr2(void)
   return val;
 }
 
+//将内核页表放入cr3寄存器，即页表寄存器中
 static inline void
 lcr3(uint val)
 {

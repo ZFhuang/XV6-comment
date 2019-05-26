@@ -41,9 +41,9 @@ seginit(void)
 // Return the address of the PTE in page table pgdir
 // that corresponds to virtual address va.  If alloc!=0,
 // create any required page table pages.
-//PTE即page table entries，页面起地址，想要得到具体字节还需要对这个地址进行偏移
+//PTE即page table entries，页表项，想要指到具体字节还需要利用其内容中的物理地址进行偏移
 //此函数从页目录表中利用虚拟地址va跳转到对应的页表中返回这个地址对应的页表项的地址
-//当alloc不等于0时允许创建所需的页表项
+//当alloc不等于0时允许创建未在使用的页表项
 static pte_t *
 walkpgdir(pde_t *pgdir, const void *va, int alloc)
 {
@@ -63,6 +63,7 @@ walkpgdir(pde_t *pgdir, const void *va, int alloc)
 	else {
 		//当得到的页表没有在使用时，由于页表也是存在页中的，如果不允许创建新页表
 		//或无法申请到新页面存放新页表时返回0
+		//申请到的pgtab是虚拟地址
 		if (!alloc || (pgtab = (pte_t*)kalloc()) == 0)
 			return 0;
 		// Make sure all those PTE_P bits are zero.
@@ -82,21 +83,19 @@ walkpgdir(pde_t *pgdir, const void *va, int alloc)
 // Create PTEs for virtual addresses starting at va that refer to
 // physical addresses starting at pa. va and size might not
 // be page-aligned.
-//往页目录表中写入每一页表对应的物理地址的过程
+//建立整个页虚拟地址到物理地址映射的过程，不只是完成了页目录的映射还要完成页表的映射
 static int
 mappages(pde_t *pgdir, void *va, uint size, uint pa, int perm)
 {
 	char *a, *last;
 	pte_t *pte;
 
-	//先得到此虚存地址的虚拟页开始地址
-	//这是因为虚拟地址包含了页目录表数组的索引
+	//先得到此虚存地址的最低虚拟页开始地址
 	a = (char*)PGROUNDDOWN((uint)va);
 	//再计算结束页虚拟地址
 	last = (char*)PGROUNDDOWN(((uint)va) + size - 1);
 	for (;;) {
-		//利用虚拟地址查找页目录表中此页对应的页表项的物理地址
-		//也就是找到此页所在的页表数组的那一项的位置
+		//此函数返回当前遍历着的这个页对应页表中的页表项的地址，自动深入两层
 		if ((pte = walkpgdir(pgdir, a, 1)) == 0)
 			return -1;
 		if (*pte & PTE_P)
@@ -155,14 +154,15 @@ static struct kmap {
 	int perm;//permission权限位
 }
 //这是kmap表数组kmap的定义，包含了四个子部分，与文档中的图对应，每项都初始化上面的参数
+//这里一共初始化了的虚拟地址空间是256M
 kmap[] = {
-   // I/O space IO空间
+   // I/O space IO空间，1M
  { (void*)KERNBASE, 0,             EXTMEM,    PTE_W}, 
    // kern text+rodata，此项不可写，是内核代码部分
  { (void*)KERNLINK, V2P(KERNLINK), V2P(data), 0},  
-   // kern data+memory内核数据及自由内存部分
+   // kern data内核数据，此两项共223M
  { (void*)data,     V2P(data),     PHYSTOP,   PTE_W}, 
-   // more devices其余设备
+   // more devices其余设备，32M
  { (void*)DEVSPACE, DEVSPACE,      0,         PTE_W}, 
 };
 
@@ -179,7 +179,7 @@ setupkvm(void)
 	//申请一个空闲页，即从空闲页链的头部取一个
 	if ((pgdir = (pde_t*)kalloc()) == 0)
 		return 0;
-	//将得到的这个页置0
+	//将得到的这个页置0，这个置0正好置0了最后的标记位也就方便了后面检测此项有没有被使用
 	memset(pgdir, 0, PGSIZE);
 	if (P2V(PHYSTOP) > (void*)DEVSPACE)
 		//防止PHYSTOP设置出错，主要是会被KERNBASE影响，但是这个检查有必要么？
@@ -251,6 +251,7 @@ switchuvm(struct proc *p)
 
 // Load the initcode into address 0 of pgdir.
 // sz must be less than a page.
+//第一个进程的页表
 void
 inituvm(pde_t *pgdir, char *init, uint sz)
 {
@@ -266,6 +267,7 @@ inituvm(pde_t *pgdir, char *init, uint sz)
 
 // Load a program segment into pgdir.  addr must be page-aligned
 // and the pages from addr to addr+sz must already be mapped.
+//载入用户页表
 int
 loaduvm(pde_t *pgdir, char *addr, struct inode *ip, uint offset, uint sz)
 {
@@ -290,6 +292,7 @@ loaduvm(pde_t *pgdir, char *addr, struct inode *ip, uint offset, uint sz)
 
 // Allocate page tables and physical memory to grow process from oldsz to
 // newsz, which need not be page aligned.  Returns new size or 0 on error.
+//为用户分配页表
 int
 allocuvm(pde_t *pgdir, uint oldsz, uint newsz)
 {
@@ -324,7 +327,7 @@ allocuvm(pde_t *pgdir, uint oldsz, uint newsz)
 // newsz.  oldsz and newsz need not be page-aligned, nor does newsz
 // need to be less than oldsz.  oldsz can be larger than the actual
 // process size.  Returns the new process size.
-//撤销已经映射好的页表
+//回收页表分配出去的内存空间
 int
 deallocuvm(pde_t *pgdir, uint oldsz, uint newsz)
 {
@@ -388,6 +391,7 @@ clearpteu(pde_t *pgdir, char *uva)
 
 // Given a parent process's page table, create a copy
 // of it for a child.
+//复制一份页表，fork中要用
 pde_t*
 copyuvm(pde_t *pgdir, uint sz)
 {

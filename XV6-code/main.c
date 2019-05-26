@@ -19,7 +19,7 @@ extern char end[]; // first address after kernel loaded from ELF file
 int
 main(void)
 {
-	//初始分配物理内存，此时页表还不完整
+	//初始分配物理页，此时页表还不完整
 	//在里面巧用了freerange释放内核以后直到物理内存末尾的内存
 	//正好会将它们都分割为页存入空闲页链中
 	//P2V将物理内存末尾地址转换为虚拟内存地址从而来操作
