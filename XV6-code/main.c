@@ -40,7 +40,7 @@ main(void)
 	fileinit();      // file table
 	ideinit();       // disk 
 	startothers();   // start other processors
-	//进一步初始化
+	//进一步初始化内核内存映射
 	kinit2(P2V(4 * 1024 * 1024), P2V(PHYSTOP)); // must come after startothers()
 	userinit();      // first user process
 	mpmain();        // finish this processor's setup
@@ -107,12 +107,11 @@ startothers(void)
 // Page directories (and page tables) must start on page boundaries,
 // hence the __aligned__ attribute.
 // PTE_PS in a page directory entry enables 4Mbyte pages.
-
+//xv6的页表分1024个二级页表，是由1024个页，每个页4K内存组成的
+//每个二级页表可以储存4M的内容，也就是目前初始页表的页面大小
 __attribute__((__aligned__(PGSIZE)))
 //这里是初始进入时的页目录表，只有一级，包含了1024个元素
 //此时里面没有分页表，只有4M的连续内存，稍后会分配为正常页表：
-//xv6的页表分1024个二级页表，是由1024个页，每个页4K内存组成的
-//每个二级页表可以储存4M的内容，也就是目前初始页表的页面大小
 pde_t entrypgdir[NPDENTRIES] = {
 	// Map VA's [0, 4MB) to PA's [0, 4MB)
 	//通过设置PTE_PS使得可以分配一个连续的2级页表大小的内存，也就是连续的4M

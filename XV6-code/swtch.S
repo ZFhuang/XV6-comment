@@ -6,7 +6,8 @@
 # a struct context, and save its address in *old.
 # Switch stacks to new and pop previously-saved registers.
 
-# 上下文切换器 swtch（2702）一开始从栈中弹出参数
+# 上下文切换器 用于切换上下文 保存旧的，插入新的
+# swtch（2702）一开始从栈中弹出参数
 # 放入寄存器 %eax 和 %edx（2709-2710）中
 # swtch 必须在改变栈指针以及无法获得 %esp 前完成这些事情
 # 然后 swtch 压入寄存器，在当前栈上建立一个新的上下文结构
@@ -26,24 +27,27 @@
 .globl swtch
 swtch:
   # 先将栈中带来的也就是调用这段函数的参数弹出到eax和edx中
+  # 第一个参数，旧的上下文，需要保存
   movl 4(%esp), %eax
+  # 第二个参数，新的上下文，切换进去
   movl 8(%esp), %edx
 
   # Save old callee-saved registers
-  # 然后压栈保存目前的一些x86要求保存的寄存器
+  # pushl a 将a寄存器的值以32位格式压入栈中保存
+  # 压栈保存目前的一些x86要求保存的寄存器，压栈是与context顺序反向的
   pushl %ebp
   pushl %ebx
   pushl %esi
   pushl %edi
 
   # Switch stacks
-  # 接着改变栈指针的值
+  # 接着将旧的上下文指针放入刚才读入的栈顶内存
   movl %esp, (%eax)
-  # 这里将新的栈指针放入
+  # 将新上下文的指针从刚才开始时读入的edx寄存器移动到栈寄存器
   movl %edx, %esp
 
   # Load new callee-saved registers
-  # 由于栈指针的变化，此时pop出来的寄存器值就是新的上下文的寄存器了
+  # 由于栈指针的变化，此时pop出来的寄存器值就是新的上下文的寄存器了，取出自然也要反向
   popl %edi
   popl %esi
   popl %ebx

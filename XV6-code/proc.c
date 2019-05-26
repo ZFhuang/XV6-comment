@@ -1,3 +1,5 @@
+//xv6每次调度切换进程都是先切换到内核进程，再切换到目标进程
+
 #include "types.h"
 #include "defs.h"
 #include "param.h"
@@ -81,7 +83,7 @@ allocproc(void)
 	struct proc *p;
 	char *sp;
 
-	//申请PCB表的访问
+	//申请PCB表的访问锁
 	acquire(&ptable.lock);
 
 	for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
@@ -94,14 +96,16 @@ allocproc(void)
 	return 0;
 
 found:
-	//萌芽中
+	//将刚才找到的PCB设置为萌芽中
 	p->state = EMBRYO;
 	//分配新的pid，nextpid的初始值为1，不会与子进程冲突
 	p->pid = nextpid++;
 
+	//因为进程表已经访问完成了所以可以释放锁
 	release(&ptable.lock);
 
 	// Allocate kernel stack.
+	//分配一页内存页来储存内核栈
 	if ((p->kstack = kalloc()) == 0) {
 		p->state = UNUSED;
 		return 0;
@@ -109,17 +113,21 @@ found:
 	sp = p->kstack + KSTACKSIZE;
 
 	// Leave room for trap frame.
+	//给陷入帧留空间
 	sp -= sizeof *p->tf;
 	p->tf = (struct trapframe*)sp;
 
 	// Set up new context to start executing at forkret,
 	// which returns to trapret.
+	//栈指针，也就是真正的调用者位置
 	sp -= 4;
 	*(uint*)sp = (uint)trapret;
-
+	//设置上下文
 	sp -= sizeof *p->context;
 	p->context = (struct context*)sp;
+	//上下文置零
 	memset(p->context, 0, sizeof *p->context);
+	//申请分配进程得到的进程的PC指针在forkret的位置，也就会跳转到forkret
 	p->context->eip = (uint)forkret;
 
 	return p;
@@ -181,6 +189,7 @@ growproc(int n)
 			return -1;
 	}
 	curproc->sz = sz;
+	//切换页表到目标进程
 	switchuvm(curproc);
 	return 0;
 }
@@ -202,7 +211,8 @@ fork(void)
 		return -1;
 	}
 
-	// Copy process state from proc.复制状态
+	// Copy process state from proc.
+	//复制原来的进程的页表
 	if ((np->pgdir = copyuvm(curproc->pgdir, curproc->sz)) == 0) {
 		kfree(np->kstack);
 		np->kstack = 0;
@@ -211,7 +221,7 @@ fork(void)
 	}
 	np->sz = curproc->sz;
 	np->parent = curproc;
-	//给新PCB一样的栈帧，所以新进程从这里继续
+	//给新PCB一样的栈帧
 	*np->tf = *curproc->tf;
 
 	// Clear %eax so that fork returns 0 in the child.
@@ -231,7 +241,8 @@ fork(void)
 	//锁
 	acquire(&ptable.lock);
 
-	//设置新进程PCB为runnable
+	//设置新进程PCB为runnable，等待时钟的调度
+	//又由于其eip已经设置为forkret，可以就可以正常进入代码
 	np->state = RUNNABLE;
 
 	//释放锁
@@ -342,6 +353,7 @@ wait(void)
 //调度器是一个暂时进入的新线程，通过切换上下文进来的
 //调度本质上就是选择要给CPU运行的合适的上下文
 //调度器线程是永不返回的，会持续进行选择新进程，通过切上下文来保持内部信息
+//调度器与其他线程交替运行的特性称为共行/协程coroutines
 void
 scheduler(void)
 {
@@ -357,7 +369,7 @@ scheduler(void)
 		sti();
 
 		// Loop over process table looking for process to run.
-		//求一个锁，此时是调度器线程的锁，和外面的不一样所以不会panic
+		//请求进程表的锁，这是属于调度器进程的锁(但是锁仍然只有一个)
 		acquire(&ptable.lock);
 		for (p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
 			//有点像fork在找进程PCB表，只不过这次是要找到第一个RUNNABLE的进程
@@ -375,22 +387,29 @@ scheduler(void)
 			//设置接下来要运行的这个进程是RUNNING
 			p->state = RUNNING;
 
+			//swtch是进程切换的核心
 			//在这里调度器再将上下文改到这个选中的进程的上下文中同时保存了调度器的上下文
 			//这样就通过切换上下文在保留调度器循环暂停的情况下把CPU交给了新进程
+			//可以发现这里切换进程的时候并没有释放之前的进程表锁，而是交给目标进程释放
+			//这是为了防止在切换进程的过程中有另一个CPU也想要运行此进程
+			//导致两个CPU运行在同个栈上
 			swtch(&(c->scheduler), p->context);
-			//回到这里的时候，因为调度器是运行在内核的，切换到内核页表
+			//由于用户进程让步了CPU所以回到了调度器继续查找进程，此时仍然是带锁的
+			//回到这里的时候，因为调度器是运行在内核的，切换回到内核页表
 			switchkvm();
 
 			// Process is done running for now.
 			// It should have changed its p->state before coming back.
+			//由于CPU让步了，所以调度器负责将CPU分配给其他进程
 			//cpu的当前进程又设0了，这样就恢复到了循环开始的时候，继续下个调度
 			c->proc = 0;
 		}
+
 		//调度器完成了一圈进程表的遍历，释放锁然后继续循环
 		//这个循环是没有返回值，永无休止的
 		//释放锁是因为不应该让一个闲置状态的调度器一直把持着进程锁
+		//否则会导致其它CPU无法进行进程切换了
 		release(&ptable.lock);
-
 	}
 }
 
@@ -399,13 +418,14 @@ scheduler(void)
 // and have changed proc->state. Saves and restores
 //且要改变了RUNNING的进程
 // intena because intena is a property of this
-//需要保存和恢复中断标识？
+//需要保存和恢复中断标识
 // kernel thread, not this CPU. It should
 //因为这个中断标识的可能是这个内核调度器线程而非原先进程的
 // be proc->intena and proc->ncli, but that would
 // break in the few places where a lock is held but
 // there's no process.
-//当有些进程没有锁时会出问题
+//然后需要保证切换进程的这个状态中进程表是不可以被修改的且CPU也是不可中断的
+//防止中途别的CPU介入调度导致例如两个CPU同时运行在一个栈上之类的错误
 void
 sched(void)
 {
@@ -415,10 +435,10 @@ sched(void)
 	//再检测下是否保持着这个锁
 	if (!holding(&ptable.lock))
 		panic("sched ptable.lock");
-	//只有第一层cli才是得到了锁的调用，其它的都在队列里还没轮到
+	//只有第一层cli才是得到了中断锁的调用，其它的都在队列里还没轮到
 	if (mycpu()->ncli != 1)
 		panic("sched locks");
-	//必须是停止运行的进程，例如RUNNABLE
+	//必须是没有在运行的进程，例如RUNNABLE
 	if (p->state == RUNNING)
 		panic("sched running");
 	//读取eflags的一个位，这个位表示了中断是否打开着
@@ -429,13 +449,17 @@ sched(void)
 	//参数里有此进程的寄存器上下文和这个CPU的调度器上下文
 	//在这要来改变这个进程的上下文，将上下文改为scheduler的
 	//也就是通过暂时进入了调度器线程
+	//在这过程中仍然保持着刚才的进程表锁，也就是把锁的控制权给了调度进程
 	swtch(&p->context, mycpu()->scheduler);
-	//恢复中断标识
+	//此时进程从调度器跳了回来，这里虽然还是这个代码但是可能已经是不同的进程了
+	//这个过程中仍然把握着锁
+	//由于所有的非调度器进程都是从这里开始调度的，所以返回点都会是这里
+	//恢复调度之前的中断标识
 	mycpu()->intena = intena;
 }
 
 // Give up the CPU for one scheduling round.
-//让这个进程让步CPU的调度周期
+//让这个进程让步CPU的调度周期，可能是时钟调用的也可能是主动调用的
 void
 yield(void)
 {
@@ -444,31 +468,37 @@ yield(void)
 	acquire(&ptable.lock);  //DOC: yieldlock
 	//将状态让出，当前的进程设置为RUNNABLE
 	myproc()->state = RUNNABLE;
-	//主动调用触发调度
+	//主动调用触发调度，在调度途中没有释放锁
 	sched();
-	//释放锁
+	//此时从调度回来，就像无事发生过，一切都还是一一对应的
+	//此时释放锁，这个锁可能已经被释放开启过很多次了，但是在这个进程来看仍然只有一次
 	release(&ptable.lock);
+	//yield函数结束，回到进程自己的代码区继续执行
 }
 
 // A fork child's very first scheduling by scheduler()
 // will swtch here.  "Return" to user space.
+//这个比较特殊，是进程刚被fork出来时会到达的地方，类似于swtch结束的地方
 void
 forkret(void)
 {
 	static int first = 1;
 	// Still holding ptable.lock from scheduler.
+	//但也一样要在这里释放调度器带来的锁，保证一一对应
 	release(&ptable.lock);
 
 	if (first) {
 		// Some initialization functions must be run in the context
 		// of a regular process (e.g., they call sleep), and thus cannot
 		// be run from main().
+		//第一个进程还有不一样的操作
 		first = 0;
 		iinit(ROOTDEV);
 		initlog(ROOTDEV);
 	}
 
 	// Return to "caller", actually trapret (see allocproc).
+	//返回给调用者
 }
 
 // Atomically release lock and sleep on chan.
@@ -584,7 +614,6 @@ void
 procdump(void)
 {
 	//将进程状态符转为字符串
-	//这个语法？？
 	static char *states[] = {
 	[UNUSED]    "unused",
 	[EMBRYO]    "embryo",

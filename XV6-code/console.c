@@ -117,7 +117,7 @@ panic(char *s)
   cons.locking = 0;
   // use lapiccpunum so that we can call panic from mycpu()
   //lapic 高级可编程中断控制器
-  //打印问题
+  //打印出现的问题
   cprintf("lapicid %d: panic: ", lapicid());
   cprintf(s);
   cprintf("\n");
