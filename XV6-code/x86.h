@@ -155,6 +155,7 @@ lcr3(uint val)
 //PAGEBREAK: 36
 // Layout of the trap frame built on the stack by the
 // hardware and by trapasm.S, and passed to trap().
+//中断帧的结构，许多的寄存器和一些标识，结构与文档中的相同
 struct trapframe {
   // registers as pushed by pusha
   uint edi;
@@ -175,6 +176,7 @@ struct trapframe {
   ushort padding3;
   ushort ds;
   ushort padding4;
+  //中断序号
   uint trapno;
 
   // below here defined by x86 hardware

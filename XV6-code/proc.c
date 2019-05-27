@@ -20,6 +20,7 @@ static struct proc *initproc;
 //下个pid的分配值，设定为1不会冲突
 int nextpid = 1;
 extern void forkret(void);
+//trapret在trapasm.S里
 extern void trapret(void);
 
 static void wakeup1(void *chan);
@@ -255,17 +256,21 @@ fork(void)
 // Exit the current process.  Does not return.
 // An exited process remains in the zombie state
 // until its parent calls wait() to find out it exited.
+//退出当前的进程，已经退出的进程状态会成为zombie
 void
 exit(void)
 {
+	//先得到当前运行的进程
 	struct proc *curproc = myproc();
 	struct proc *p;
 	int fd;
 
+	//不能退出initproc
 	if (curproc == initproc)
 		panic("init exiting");
 
 	// Close all open files.
+	//关闭所有文件符
 	for (fd = 0; fd < NOFILE; fd++) {
 		if (curproc->ofile[fd]) {
 			fileclose(curproc->ofile[fd]);
@@ -278,22 +283,28 @@ exit(void)
 	end_op();
 	curproc->cwd = 0;
 
+	//请求一个进程表锁因为接下来要来修改进程表了
 	acquire(&ptable.lock);
 
 	// Parent might be sleeping in wait().
+	//唤醒父进程
 	wakeup1(curproc->parent);
 
 	// Pass abandoned children to init.
+	//将此进程的子进程的父指针指向initproc也就是让它们开始初始化
 	for (p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
 		if (p->parent == curproc) {
 			p->parent = initproc;
 			if (p->state == ZOMBIE)
+				//子进程已经是zombie就类似地唤醒其理论父进程initproc
 				wakeup1(initproc);
 		}
 	}
 
 	// Jump into the scheduler, never to return.
+	//修改自己的状态
 	curproc->state = ZOMBIE;
+	//进行调度，由于这个进程已经是ZOMBIE了所以应该不会再回到这里
 	sched();
 	panic("zombie exit");
 }
@@ -503,8 +514,9 @@ forkret(void)
 
 // Atomically release lock and sleep on chan.
 // Reacquires lock when awakened.
+//此函数由sysproc.c的sys_sleep调用
 //自动地释放锁并将进程放入睡眠等待队列中
-//要求此进程必须拥有进程锁防止wakeup
+//需要带着锁进入
 void
 sleep(void *chan, struct spinlock *lk)
 {
@@ -527,15 +539,15 @@ sleep(void *chan, struct spinlock *lk)
 	//在有锁的情况下wakeup无法在这启动
 	if (lk != &ptable.lock) {  //DOC: sleeplock0
 		//由于如果带进来的锁是进程表锁，那么不能随便释放它
-		//当不是进程表锁时，可以放心要求一个进程表锁保持住无法wakeup的状态
+		//当不是进程表锁(计时锁)时，可以放心要求一个进程表锁保持住无法wakeup的状态
 		acquire(&ptable.lock);  //DOC: sleeplock1
 		//因为有了进程表了就可以放心释放原来的锁然后可以修改这个进程
 		release(lk);
 	}
 	// Go to sleep.
-	//将其放入睡眠队列
+	//将其放入睡眠队列，值是放入的当前时间tick，等待时钟中断wakeup
 	p->chan = chan;
-	//转变状态
+	//转变状态为SLEEPING
 	p->state = SLEEPING;
 
 	//类似yield主动调用调度

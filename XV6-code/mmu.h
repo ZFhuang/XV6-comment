@@ -174,13 +174,19 @@ struct gatedesc {
 };
 
 // Set up a normal interrupt/trap gate descriptor.
+//中断/陷入门描述器，第一个参数gate是要设置的项
 // - istrap: 1 for a trap (= exception) gate, 0 for an interrupt gate.
 //   interrupt gate clears FL_IF, trap gate leaves FL_IF alone
+//陷入是1中断是0，中断会清除FL_IF位，陷阱不会。FL位是控制是否接收其它中断的
 // - sel: Code segment selector for interrupt/trap handler
+//代码段号
 // - off: Offset in code segment for interrupt/trap handler
+//代码偏移
 // - dpl: Descriptor Privilege Level -
 //        the privilege level required for software to invoke
 //        this interrupt/trap gate explicitly using an int instruction.
+//DPL权限设置，纪录了什么级别的权限可调用
+//0是最高权限(内核)，3是最低权限(用户)
 #define SETGATE(gate, istrap, sel, off, d)                \
 {                                                         \
   (gate).off_15_0 = (uint)(off) & 0xffff;                \

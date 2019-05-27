@@ -1,5 +1,5 @@
 // x86 trap and interrupt constants.
-
+//中断与陷入的常量
 // Processor-defined:
 #define T_DIVIDE         0      // divide error
 #define T_DEBUG          1      // debug exception
@@ -24,6 +24,7 @@
 
 // These are arbitrarily chosen, but with care not to overlap
 // processor defined exceptions or interrupt vectors.
+//表示系统调用中断索引
 #define T_SYSCALL       64      // system call
 #define T_DEFAULT      500      // catchall
 

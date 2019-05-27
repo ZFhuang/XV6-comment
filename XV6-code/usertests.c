@@ -1,3 +1,5 @@
+//测试程序，被预汇编到了usertests.asm中
+
 #include "param.h"
 #include "types.h"
 #include "stat.h"

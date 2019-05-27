@@ -34,7 +34,9 @@ main(void)
 	ioapicinit();    // another interrupt controller
 	consoleinit();   // console hardware
 	uartinit();      // serial port
+	//初始化进程表
 	pinit();         // process table
+	//初始化中断向量
 	tvinit();        // trap vectors
 	binit();         // buffer cache
 	fileinit();      // file table

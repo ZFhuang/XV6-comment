@@ -2,6 +2,8 @@ struct stat;
 struct rtcdate;
 
 // system calls
+//以下包装了系统调用的用户态函数
+//这里的函数会在usys.S中被实现
 int fork(void);
 int exit(void) __attribute__((noreturn));
 int wait(void);
@@ -21,6 +23,7 @@ int chdir(const char*);
 int dup(int);
 int getpid(void);
 char* sbrk(int);
+//sleep函数
 int sleep(int);
 int uptime(void);
 

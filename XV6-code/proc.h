@@ -61,7 +61,7 @@ struct proc {
 	int pid;                     // Process ID
 	//父进程
 	struct proc *parent;         // Parent process
-	//中断的陷入帧
+	//当前中断的中断帧
 	struct trapframe *tf;        // Trap frame for current syscall
 	//此进程的上下文寄存器，每个进程都有自己的一份保存
 	struct context *context;     // swtch() here to run process 
