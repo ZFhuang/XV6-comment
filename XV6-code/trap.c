@@ -66,6 +66,7 @@ trap(struct trapframe *tf)
 	switch (tf->trapno) {
 	case T_IRQ0 + IRQ_TIMER:
 		//分时硬件和时钟中断，每秒被调用100次，也就是每个ticks代表10ms
+		//具体频率设置在lapic.c中
 		if (cpuid() == 0) {
 			acquire(&tickslock);
 			ticks++;

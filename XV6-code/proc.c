@@ -306,6 +306,7 @@ exit(void)
 	curproc->state = ZOMBIE;
 	//进行调度，由于这个进程已经是ZOMBIE了所以应该不会再回到这里
 	sched();
+	//如果来到这里就报错
 	panic("zombie exit");
 }
 
@@ -522,6 +523,7 @@ sleep(void *chan, struct spinlock *lk)
 {
 	struct proc *p = myproc();
 
+	//没有进程时报错
 	if (p == 0)
 		panic("sleep");
 
@@ -569,7 +571,7 @@ sleep(void *chan, struct spinlock *lk)
 // Wake up all processes sleeping on chan.
 // The ptable lock must be held.
 //唤醒操作的真正地方，必须要有锁
-//唤醒此睡眠队列中的所有进程
+//唤醒有同样睡眠计数的所有进程
 static void
 wakeup1(void *chan)
 {
@@ -577,7 +579,8 @@ wakeup1(void *chan)
 
 	for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
 		if (p->state == SLEEPING && p->chan == chan)
-			//找到进程表中处于睡眠且处于队列中的进程，都修改为RUNNABLE
+			//找到进程表中处于睡眠且处于队列中的进程
+			//修改为RUNNABLE可供调度器继续调度
 			p->state = RUNNABLE;
 }
 

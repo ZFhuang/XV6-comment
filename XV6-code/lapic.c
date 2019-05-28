@@ -65,8 +65,11 @@ lapicinit(void)
   // from lapic[TICR] and then issues an interrupt.
   // If xv6 cared more about precise timekeeping,
   // TICR would be calibrated using an external time source.
+  //CPU打开中断控制器LAPIC的中断
   lapicw(TDCR, X1);
+  //设置LAPIC周期性地在IRQ_TIMER产生中断使得时钟中断会被启动
   lapicw(TIMER, PERIODIC | (T_IRQ0 + IRQ_TIMER));
+  //设置每10000000次CPU脉冲产生一次时钟中断
   lapicw(TICR, 10000000);
 
   // Disable logical interrupt lines.

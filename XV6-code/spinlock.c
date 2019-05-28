@@ -9,11 +9,11 @@
 #include "proc.h"
 #include "spinlock.h"
 
-//初始化这个锁
+//初始化自旋锁
 void
 initlock(struct spinlock *lk, char *name)
 {
-	//一些初始信息，写入带进来的名字
+	//一些初始信息，写入锁的名字，未被锁定和CPU的指向
 	lk->name = name;
 	lk->locked = 0;
 	lk->cpu = 0;
