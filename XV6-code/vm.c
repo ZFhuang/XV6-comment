@@ -15,6 +15,7 @@
 extern char data[];  // defined by kernel.ld
 //pde_t是uint格式的，kpgdir是页目录表，利用页目录索引了各个页表的物理地址
 pde_t *kpgdir;  // for use in scheduler()
+int kallocNum;
 
 //设置CPU的内核段描述符
 // Set up CPU's kernel segment descriptors.
@@ -176,6 +177,8 @@ setupkvm(void)
 	//用来决定每个页属于哪一部分各自拥有什么权限
 	struct kmap *k;
 
+	kallocNum = 0;
+
 	//申请一个空闲页，即从空闲页链的头部取一个
 	if ((pgdir = (pde_t*)kalloc()) == 0)
 		return 0;
@@ -193,6 +196,7 @@ setupkvm(void)
 			freevm(pgdir);
 			return 0;
 		}
+	cprintf("kalloc times: %d", kallocNum);
 	//返回写好的页目录表
 	return pgdir;
 }

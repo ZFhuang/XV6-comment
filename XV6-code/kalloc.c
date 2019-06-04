@@ -10,6 +10,8 @@
 #include "mmu.h"
 #include "spinlock.h"
 
+extern int kallocNum;
+
 void freerange(void *vstart, void *vend);
 extern char end[]; // first address after kernel loaded from ELF file
 				   // defined by the kernel linker script in kernel.ld
@@ -82,7 +84,7 @@ kfree(char *v)
 	struct run *r;
 
 	if ((uint)v % PGSIZE || v < end || V2P(v) >= PHYSTOP)
-		//异常检测(是那个页的起点，位置在内核后，位置在物理页的驱动部分前)
+		//异常检测(是那个页的起点，位置在内核后，位置在物理页的设备部分前)
 		panic("kfree");
 
 	// Fill with junk to catch dangling refs.
@@ -127,6 +129,9 @@ kalloc(void)
 		//对称地在此释放掉锁
 		release(&kmem.lock);
 	//将r进行类型转换，表示它不再是空闲页链的节点了
+
+	kallocNum++;
+
 	return (char*)r;
 }
 
