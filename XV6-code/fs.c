@@ -1,4 +1,5 @@
 // File system implementation.  Five layers:
+//文件系统的五层结构
 //   + Blocks: allocator for raw disk blocks.
 //   + Log: crash recovery for multi-step updates.
 //   + Files: inode allocator, reading, writing, metadata.
@@ -53,6 +54,7 @@ bzero(int dev, int bno)
 // Blocks.
 
 // Allocate a zeroed disk block.
+//块分配器
 static uint
 balloc(uint dev)
 {

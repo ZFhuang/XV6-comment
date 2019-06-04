@@ -39,7 +39,9 @@ main(void)
 	//初始化中断向量
 	tvinit();        // trap vectors
 	binit();         // buffer cache
+	//文件表
 	fileinit();      // file table
+	//硬盘初始化
 	ideinit();       // disk 
 	startothers();   // start other processors
 	//进一步初始化内核内存映射

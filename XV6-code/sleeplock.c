@@ -19,6 +19,7 @@ initsleeplock(struct sleeplock *lk, char *name)
   lk->pid = 0;
 }
 
+//ÇëÇóË¯ÃßËø
 void
 acquiresleep(struct sleeplock *lk)
 {

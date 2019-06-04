@@ -6,11 +6,15 @@
 #define BSIZE 512  // block size
 
 // Disk layout:
+//磁盘的布局
+// [ boot引导块 |    超级块    | 日志 |   i节点块    |
+//                                          空闲块位图    |   数据块   ]
 // [ boot block | super block | log | inode blocks |
 //                                          free bit map | data blocks]
 //
 // mkfs computes the super block and builds an initial file system. The
 // super block describes the disk layout:
+//超级块布局
 struct superblock {
   uint size;         // Size of file system image (blocks)
   uint nblocks;      // Number of data blocks
@@ -26,6 +30,7 @@ struct superblock {
 #define MAXFILE (NDIRECT + NINDIRECT)
 
 // On-disk inode structure
+// 硬盘节点的格式
 struct dinode {
   short type;           // File type
   short major;          // Major device number (T_DEV only)
