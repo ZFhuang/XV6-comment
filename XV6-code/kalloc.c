@@ -130,6 +130,7 @@ kalloc(void)
 		release(&kmem.lock);
 	//将r进行类型转换，表示它不再是空闲页链的节点了
 
+	//将我定义的这个外部变量++
 	kallocNum++;
 
 	return (char*)r;

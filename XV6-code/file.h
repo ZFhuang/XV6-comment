@@ -10,13 +10,16 @@ struct file {
 
 
 // in-memory copy of an inode
+//存放在内存中的dinode，当有指针指向这个i节点时
+//系统才把这个节点保留在内存中，因此有类似智能指针的ref
 struct inode {
   uint dev;           // Device number
   uint inum;          // Inode number
-  int ref;            // Reference count
+  int ref;            // Reference count 引用计数，0时丢弃
   struct sleeplock lock; // protects everything below here
   int valid;          // inode has been read from disk?
 
+  //对dinode的一个拷贝
   short type;         // copy of disk inode
   short major;
   short minor;

@@ -177,6 +177,7 @@ setupkvm(void)
 	//用来决定每个页属于哪一部分各自拥有什么权限
 	struct kmap *k;
 
+	//初始化为0
 	kallocNum = 0;
 
 	//申请一个空闲页，即从空闲页链的头部取一个
@@ -196,6 +197,8 @@ setupkvm(void)
 			freevm(pgdir);
 			return 0;
 		}
+
+	//输出kalloc的次数
 	cprintf("kalloc times: %d", kallocNum);
 	//返回写好的页目录表
 	return pgdir;
