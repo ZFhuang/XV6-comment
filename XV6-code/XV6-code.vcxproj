@@ -140,6 +140,8 @@
     <ClCompile Include="console.c" />
     <ClCompile Include="echo.c" />
     <ClCompile Include="echo_reversal.c" />
+    <ClCompile Include="editor.c" />
+    <ClCompile Include="editor_old.c" />
     <ClCompile Include="exec.c" />
     <ClCompile Include="file.c" />
     <ClCompile Include="forktest.c" />

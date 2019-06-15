@@ -224,6 +224,12 @@
     <ClCompile Include="zombie.c">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="editor.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="editor_old.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="bootasm.S">
