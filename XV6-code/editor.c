@@ -1,4 +1,4 @@
-#include "types.h"
+﻿#include "types.h"
 #include "stat.h"
 #include "user.h"
 #include "fcntl.h"
@@ -7,6 +7,7 @@
 // ************************************************************ const strings *
 #define MAX_CHAR_INSHOW 80
 #define BUF_LINE_LENGTH 320
+#define LINE_IDX_SPACE 5
 #define NULL 0
 
 // *********************************************************** data structure *
@@ -21,14 +22,23 @@ typedef struct LineNode {
 // **************************************************** function decalrations *
 int loadFile(char* filePath);
 void showFile();
+void showHelp();
+void cmdLoop();
 int initList();
+int freeList();
 LineNode* newNode(LineNode* prev);
+LineNode* deleteNode(LineNode* node);
+LineNode* findNode(int index);
 char* setStr(char* target, char* from, int len);
+char* idx2Str(int idx);
 
 // **************************************************************** variables *
 int fileLineNum = 0;
+int showLineIdx = 0;
 LineNode* headNode;
 LineNode* tailNode;
+int latestLine;
+LineNode* latestNode;
 
 // *********************************************************** function bodys *
 int main(int argc, char* argv[])
@@ -51,7 +61,14 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
+	// display all this file
 	showFile();
+
+	// show command help.
+	showHelp();
+
+	// reading user's commands
+	cmdLoop();
 
 	// editor ends normally
 	exit();
@@ -83,6 +100,7 @@ int loadFile(char* filePath) {
 
 	// read a new line
 	while ((len = read(file, buf, BUF_LINE_LENGTH)) > 0) {
+		// set two pointer here
 		int start = 0;
 		int end = 0;
 		// if the [start pointer] is still inline
@@ -138,12 +156,108 @@ int loadFile(char* filePath) {
 
 // display file in commandline
 void showFile() {
+	printf(1, "\n================================================================================\n");
 	LineNode* now = headNode->next;
-	while (now!=tailNode)
+	char lineInShow[LINE_IDX_SPACE + MAX_CHAR_INSHOW + 1] = {};
+	int lineIdx = 0;
+	while (now != tailNode)
 	{
 		// display one line
-		printf(1, "%s\n",now->content);
+		int start = 0;
+		while (start < now->length||start==0) {
+			int len = now->length - start;
+			// modify length
+			if (len > MAX_CHAR_INSHOW) {
+				len = MAX_CHAR_INSHOW;
+			}
+
+			// should show line index
+			if (showLineIdx) {
+				setStr(&lineInShow[LINE_IDX_SPACE], &now->content[start], len);
+				char* idxS = NULL;
+				// is true line
+				if (start == 0) {
+					++lineIdx;
+					idxS = idx2Str(lineIdx);
+				}
+				// just part of a line
+				else {
+					idxS = idx2Str(-1);
+				}
+				setStr(&lineInShow[0], &idxS[0], LINE_IDX_SPACE);
+				free(idxS);
+				lineInShow[len + LINE_IDX_SPACE] = '\0';
+			}
+			// needn't show index
+			else {
+				setStr(&lineInShow[0], &now->content[start], len);
+				lineInShow[len] = '\0';
+			}
+
+			printf(1, "%s\n", lineInShow);
+			if (len != 0)
+				start += len;
+			else
+				start += 1;
+		}
 		now = now->next;
+	}
+	printf(1, "\n================================================================================\n");
+}
+
+void showHelp()
+{
+	printf(1, "********************************************************************************\n");
+	printf(1, "PROGRAM HELP:\n");
+	printf(1, "[v]: display all this file.\n");
+	printf(1, "[V]: display all this file with line index.\n");
+	printf(1, "[n [num]]: change line's width\n");
+	printf(1, "[K]: show command help.\n");
+	printf(1, "[w]: save the file\n");
+	printf(1, "[q]: quit editor\n");
+	printf(1, "********************************************************************************\n");
+}
+
+// reading user's commands
+void cmdLoop()
+{
+	// character inputed
+	char c;
+
+	// an eternal loop for reading user's commands
+	while (1)
+	{
+		// read from the standard input
+		if (read(0, &c, 1) < 1)
+			continue;
+		// help
+		if (c == 'K') {
+			showHelp();
+		}
+		// show file normally
+		else if (c == 'v') {
+			showLineIdx = 0;
+			showFile();
+		}
+		// show file with index
+		else if (c == 'V') {
+			showLineIdx = 1;
+			showFile();
+		}
+		// esc
+		else if (c == 'q') {
+			break;
+		}
+		// input mode
+		else if (c == 'i') {
+			continue;
+		}
+		else if (c == '\n') {
+			continue;
+		}
+		else {
+			printf(1, "command error\n");
+		}
 	}
 }
 
@@ -169,6 +283,20 @@ int initList() {
 	return 1;
 }
 
+int freeList()
+{
+	LineNode* now = headNode->next;
+	while (now != tailNode)
+	{
+		now = deleteNode(now);
+		if (now == NULL) {
+
+		}
+	}
+	printf(1, "free list completed!\n");
+	return 1;
+}
+
 // add a new node after [prev] and return it
 LineNode* newNode(LineNode* prev) {
 	if (prev == NULL) {
@@ -183,6 +311,7 @@ LineNode* newNode(LineNode* prev) {
 		return NULL;
 	}
 
+	// insert new node into list
 	LineNode* next = prev->next;
 	if (next) {
 		next->prev = node;
@@ -201,6 +330,29 @@ LineNode* newNode(LineNode* prev) {
 	return node;
 }
 
+// delete this node and return the node after it
+LineNode * deleteNode(LineNode * node)
+{
+	if (node == NULL) {
+		printf(1, "node is NULL!\n");
+		return NULL;
+	}
+	if (node == headNode || node == tailNode) {
+		printf(1, "can't delete root nodes!\n");
+		return NULL;
+	}
+
+	LineNode * next = node->next;
+	node->prev->next = next;
+	next->prev = node->prev;
+
+	// free the select node
+	free(node->content);
+	free(node);
+
+	return next;
+}
+
 // parse [from+len] to target
 char* setStr(char* target, char* from, int len) {
 	int i = 0;
@@ -209,4 +361,42 @@ char* setStr(char* target, char* from, int len) {
 	}
 
 	return target;
+}
+
+// convert int to str
+char * idx2Str(int idx)
+{
+	char* str = (char*)malloc(sizeof(char)*LINE_IDX_SPACE);
+	if (str == NULL) {
+		printf(1, "idx string alloc failed\n");
+		return NULL;
+	}
+
+	// get the mod number
+	int i = 0, mod = 1;
+	if (idx != -1) {
+		for (i = 0; i < LINE_IDX_SPACE - 1; ++i) {
+			mod *= 10;
+		}
+		while (idx%mod == 0) {
+			mod /= 10;
+		}
+		mod /= 10;
+	}
+	else {
+		// space string
+		mod = 0;
+	}
+
+	// fill str
+	for (i = 0; i < LINE_IDX_SPACE; ++i) {
+		if (mod >= 1) {
+			str[i] = 48 + (idx / mod) % 10;
+			mod /= 10;
+		}
+		else {
+			str[i] = ' ';
+		}
+	}
+	return str;
 }
