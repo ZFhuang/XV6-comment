@@ -6,10 +6,12 @@
 
 // ************************************************************ const strings *
 #define MAX_CHAR_INSHOW 80
-#define BUF_LINE_LENGTH 320
+#define BUF_LINE_LENGTH 512
 #define LINE_IDX_SPACE 5
 #define COMMAND_MAX_LEN 100
 #define NULL 0
+#define TRUE 1
+#define FALSE 0
 
 // *********************************************************** data structure *
 // use linkedlist to store the text
@@ -23,7 +25,7 @@ typedef struct LineNode {
 // **************************************************** function decalrations *
 int loadFile(char* filePath);
 int saveFile(char* filePath);
-void showFile();
+void showFile(int idx,int lines);
 void showHelp();
 void cmdLoop();
 int cmdExec(char* name, char* args);
@@ -37,6 +39,8 @@ void ins(int idx, char* args);
 void mod(int idx, char* args);
 void num(char* args);
 void del(char* args);
+void cut(char* args);
+int quit();
 
 char* setStr(char* target, char* from, int len);
 char* idx2Str(int idx);
@@ -47,10 +51,11 @@ int fileLineNum = 0;
 int showLineIdx = 1;
 LineNode* headNode;
 LineNode* tailNode;
+char* oriPath;
 int isDirty = 0;
-char* path;
-//int curIdx;
-//LineNode* curNode;
+int isAim = 0;
+int currentLine = 0;
+LineNode* curNode;
 
 // *********************************************************** function bodys *
 int main(int argc, char* argv[])
@@ -63,15 +68,17 @@ int main(int argc, char* argv[])
 	}
 
 	if (loadFile(argv[1])) {
-		// check successfully
-		printf(1, "Load successfully! File lines: %d\n", fileLineNum);
+		// successfully check 
+		printf(1, "successfully load! file lines: %d\n", fileLineNum);
 	}
 	else {
 		// something goes wrong
-		printf(1, "Load unsuccessfully!\n\n");
+		printf(1, "unsuccessfully load!\n\n");
 		exit();
 		return -1;
 	}
+
+	isDirty = FALSE;
 
 	// show command help.
 	showHelp();
@@ -86,6 +93,7 @@ int main(int argc, char* argv[])
 	free(tailNode);
 	printf(1, "editor exit.\n");
 	exit();
+
 	return 0;
 }
 
@@ -94,16 +102,16 @@ int loadFile(char* filePath) {
 	// check if [filePath] is exist
 	int file = open(filePath, O_RDONLY);
 	if (file == -1) {
-		printf(1, "File not found!\n");
-		return 0;
+		printf(1, "file not found!\n");
+		return FALSE;
 	}
-	printf(1, "File found!\n");
-	path = filePath;
+	printf(1, "file found!\n");
+	oriPath = filePath;
 
 	// init it
 	if (!initList()) {
 		printf(1, "initList error!\n");
-		return 0;
+		return FALSE;
 	}
 
 	// the most important part
@@ -131,7 +139,7 @@ int loadFile(char* filePath) {
 
 			if (now == NULL) {
 				printf(1, "nowNode pointer is NULL!\n");
-				return 0;
+				return FALSE;
 			}
 
 			// if is a new line
@@ -165,26 +173,114 @@ int loadFile(char* filePath) {
 		}
 	}
 
+	currentLine = 1;
+	curNode = headNode->next;
+	isAim = 1;
+
+	close(file);
 	return 1;
 }
 
+// save the file into harddisk
+int saveFile(char * filePath)
+{
+	if (filePath[0] == '\0')
+		filePath = oriPath;
+
+	// delete old file
+	unlink(filePath);
+
+	int file = open(filePath, O_WRONLY | O_CREATE);
+	if (file == -1)
+	{
+		printf(1, "save failed, file can't open: %s\n", filePath);
+		return FALSE;
+	}
+
+	if (fileLineNum <= 0) {
+		printf(1, "successfully saved! file lines: %d\n", fileLineNum);
+		// refresh dirty flag
+		isDirty = 0;
+		return TRUE;
+	}
+
+	int count = 0;
+	int part = fileLineNum / 10;
+	LineNode* now = headNode->next;
+	printf(1, "saving");
+	while (now != tailNode)
+	{
+		write(file, now->content, now->length);
+		write(file, "\n", 1);
+		now = now->next;
+		++count;
+		if (count%part == 0) {
+			printf(1, ".");
+		}
+	}
+
+	close(file);
+
+	printf(1, "saved! file lines: %d\n", count);
+	// refresh dirty flag
+	isDirty = 0;
+	return TRUE;
+}
+
 // display file in commandline
-void showFile() {
+void showFile(int index,int lines) {
 	if (fileLineNum == 0) {
-		printf(1,"the file is null!\n");
+		printf(1, "the file is null!\n");
+		return;
+	}
+	if (index > fileLineNum) {
+		printf(1, "index inputed is wrong! fileLine: %d\n",fileLineNum);
 		return;
 	}
 
 	printf(1, "\n================================================================================\n");
-	LineNode* now = headNode->next;
-	char lineInShow[LINE_IDX_SPACE + MAX_CHAR_INSHOW + 1] = {};
-	int lineIdx = 0;
-	while (now != tailNode)
+
+	// init start node
+	int endIndex;
+	if (index == 0) {
+		curNode = headNode->next;
+		currentLine = 1;
+		endIndex = fileLineNum;
+	}
+	else {
+		// backwards
+		if (lines < 0) {
+			index += lines;
+			index - 1;
+			if (index < 0) {
+				index = 1;
+			}
+		}
+		LineNode* tmp = findNode(index);
+		if (tmp == NULL) {
+			return;
+		}
+		curNode = tmp;
+		currentLine = index;
+		// forwards
+		if (lines < 0) {
+			endIndex = currentLine - lines;
+		}
+		else {
+			endIndex = currentLine + lines;
+		}
+		if (endIndex > fileLineNum) {
+			endIndex = fileLineNum;
+		}
+	}
+
+	char lineInShow[LINE_IDX_SPACE + MAX_CHAR_INSHOW + 2] = {};
+	while (curNode != tailNode)
 	{
 		// display one line
 		int start = 0;
-		while (start < now->length || start == 0) {
-			int len = now->length - start;
+		while (start < curNode->length || start == 0) {
+			int len = curNode->length - start;
 			// modify length
 			if (len > MAX_CHAR_INSHOW) {
 				len = MAX_CHAR_INSHOW;
@@ -192,12 +288,12 @@ void showFile() {
 
 			// should show line index
 			if (showLineIdx) {
-				setStr(&lineInShow[LINE_IDX_SPACE], &now->content[start], len);
+				setStr(&lineInShow[LINE_IDX_SPACE], &curNode->content[start], len);
 				char* idxS = NULL;
 				// is true line
 				if (start == 0) {
-					++lineIdx;
-					idxS = idx2Str(lineIdx);
+					idxS = idx2Str(currentLine);
+					++currentLine;
 				}
 				// just part of a line
 				else {
@@ -205,21 +301,30 @@ void showFile() {
 				}
 				setStr(&lineInShow[0], &idxS[0], LINE_IDX_SPACE);
 				free(idxS);
-				lineInShow[len + LINE_IDX_SPACE] = '\0';
+				lineInShow[len + LINE_IDX_SPACE] = '\n';
+				lineInShow[len + LINE_IDX_SPACE + 1] = '\0';
+				// use write instead of printf
+				write(1, lineInShow, len + LINE_IDX_SPACE + 1);
 			}
 			// needn't show index
 			else {
-				setStr(&lineInShow[0], &now->content[start], len);
-				lineInShow[len] = '\0';
+				setStr(&lineInShow[0], &curNode->content[start], len);
+				lineInShow[len] = '\n';
+				lineInShow[len + 1] = '\0';
+				// use write instead of printf
+				write(1, lineInShow, len + 1);
 			}
 
-			printf(1, "%s\n", lineInShow);
 			if (len != 0)
 				start += len;
 			else
 				start += 1;
 		}
-		now = now->next;
+		curNode = curNode->next;
+		// jump out
+		if (currentLine > endIndex) {
+			break;
+		}
 	}
 	printf(1, "\n================================================================================\n");
 }
@@ -227,29 +332,27 @@ void showFile() {
 // display help info
 void showHelp()
 {
-	printf(1, "********************************************************************************\n");
-	printf(1, "PROGRAM INSTRUCTION:\n");
-
-	printf(1, "[i(ns) (string)]: insert (string) to the end.OK\n");
-	printf(1, "[i(ns)- [idx] (string)]: insert (string) after line at (idx).OK\n");
-
-	printf(1, "[d(el) (idx1) (idx2)]: delete line from (idx1) to (idx2).OK\n");
-
-	printf(1, "[m(od) (string)]: modify the line at the end to (string).\n");
-	printf(1, "[m(od)- [idx] (string)]: modify the line at (idx) to (string).\n");
-
-	printf(1, "[l(ist)]: display all this file.OK\n");
-
-	printf(1, "[n(um) (1/0)]: show the line index or not.OK\n");
-
-	printf(1, "[h(elp)]: show command help.OK\n");
-
-	printf(1, "[w(ri)]: write this file into harddisk.\n");
-
-	printf(1, "[q(uit)]: quit editor.OK\n");
-
-	printf(1, "[wq]: write this file into harddisk and quit editor.\n");
-	printf(1, "********************************************************************************\n");
+	// use write instead of printf
+	write(1,
+		"********************************************************************************\n"
+		"PROGRAM INSTRUCTION:\n"
+		"COMMANDS IN BRACKETS ARE NECESSARY VARIBLES\n"
+		"[i(ns) (string)]:            insert (string) to the end.OK\n"
+		"[i(ns)- [idx] (string)]:     insert (string) after line at (idx).OK\n"
+		"[d(el) (idx1) (idx2)]:       delete line from (idx1) to (idx2).OK\n"
+		"[m(od) (string)]:            modify the line at the end to (string).OK\n"
+		"[m(od)- [idx] (string)]:     modify the line at (idx) to (string).OK\n"
+		"[c(ut) [idx1] [idx2] [tar]]: cut lines between (idx1) and (idx2) to (tar).OK\n"
+		"[l(ist) (num)]:              display 10 lines after num and set the cursor to (num+10).\n"
+		"[p(rev) (num)]:              display previous (num) lines and set the cursor after it.\n"
+		"[n(ext) (num)]:              display next (num) lines and set the cursor after it.\n"
+		"[num (1/0)]:                 show the line index or not.OK\n"
+		"[h(elp)]:                    show command help.OK\n"
+		"[w(ri) (path)]:              write this file into (path).OK\n"
+		"[q(uit)]:                    quit editor.OK\n"
+		"[wq]:                        write this file into harddisk and quit editor.OK\n"
+		"********************************************************************************\n",
+		1187);
 }
 
 // analyze user's commands
@@ -266,17 +369,23 @@ void cmdLoop()
 	while (1)
 	{
 		// init
-		printf(1, ":");
+		if (isDirty) {
+			printf(1, "*:");
+		}
+		else {
+			printf(1, " :");
+		}
 		cmdi = 0;
 		argi = 0;
 		name[0] = '\0';
 		args[0] = '\0';
+		memset(input, 0, COMMAND_MAX_LEN);
 
 		// get the input command
 		gets(input, COMMAND_MAX_LEN);
 
 		// get command name
-		while (input[cmdi] != ' '&&input[cmdi] != '\n')
+		while (input[cmdi] != ' '&&input[cmdi] != '\n'&&input[cmdi] != '\0')
 		{
 			if (argi >= 4) {
 				printf(1, "command name error!\n");
@@ -287,7 +396,7 @@ void cmdLoop()
 			++cmdi;
 		}
 		name[argi] = '\0';
-		if (input[cmdi] == '\n') {
+		if (input[cmdi] == '\n' || input[cmdi] == '\0') {
 			goto EXEC;
 		}
 
@@ -306,13 +415,14 @@ void cmdLoop()
 			++cmdi;
 		}
 		args[argi] = '\0';
-		if (input[cmdi] == '\n') {
+		if (input[cmdi] == '\n')
 			goto EXEC;
-		}
+		else
+			goto NEXT;
 
 	EXEC:
 		if (cmdExec(name, args)) {
-			// return 1 means should exit editor
+			// return TRUE means should exit editor
 			break;
 		}
 		continue;
@@ -328,7 +438,7 @@ int cmdExec(char* name, char* args)
 {
 	if (name[0] == '\0') {
 		printf(1, "get empty command!\n");
-		return 0;
+		return FALSE;
 	}
 
 	// insert line after 
@@ -337,7 +447,7 @@ int cmdExec(char* name, char* args)
 	}
 	else if (strcmp(name, "i-") == 0 || strcmp(name, "ins-") == 0) {
 		int idx = str2Idx(args);
-		if (idx == -1) {
+		if (idx == 99999) {
 			printf(1, "index inputed is wrong!\n");
 			return 0;
 		}
@@ -349,37 +459,74 @@ int cmdExec(char* name, char* args)
 	else if (strcmp(name, "d") == 0 || strcmp(name, "del") == 0) {
 		del(args);
 	}
-	if (strcmp(name, "m") == 0 || strcmp(name, "mod") == 0) {
+	else if (strcmp(name, "m") == 0 || strcmp(name, "mod") == 0) {
 		mod(fileLineNum, args);
 	}
 	else if (strcmp(name, "m-") == 0 || strcmp(name, "mod-") == 0) {
 		int idx = str2Idx(args);
-		if (idx == -1) {
+		if (idx == 99999) {
 			printf(1, "index inputed is wrong!\n");
-			return 0;
+			return FALSE;
 		}
 		int i = 0;
 		for (i = 0; args[i] != ' '; ++i)
 			;
 		mod(idx, &args[i + 1]);
 	}
-	else if (strcmp(name, "l") == 0 || strcmp(name, "list") == 0) {
-		showFile();
+	else if (strcmp(name, "c") == 0 || strcmp(name, "cut") == 0) {
+		cut(args);
 	}
-	else if (strcmp(name, "n") == 0 || strcmp(name, "num") == 0) {
+	else if (strcmp(name, "l") == 0 || strcmp(name, "list") == 0) {
+		int idx = str2Idx(args);
+		if (idx == 99999) {
+			printf(1, "index inputed is wrong!\n");
+			return FALSE;
+		}
+		showFile(idx,10);
+	}
+	else if (strcmp(name, "n") == 0 || strcmp(name, "next") == 0) {
+		int lines = str2Idx(args);
+		if (lines == 99999) {
+			printf(1, "lines num inputed is wrong!\n");
+			return FALSE;
+		}
+		if (lines <= 0) {
+			lines = 10;
+		}
+		showFile(currentLine, lines);
+	}
+	else if (strcmp(name, "p") == 0 || strcmp(name, "prev") == 0) {
+		int lines = str2Idx(args);
+		if (lines == 99999) {
+			printf(1, "lines num inputed is wrong!\n");
+			return FALSE;
+		}
+		if (lines <= 0) {
+			lines = 10;
+		}
+		showFile(currentLine, -lines);
+	}
+	else if (strcmp(name, "num") == 0) {
 		num(args);
 	}
 	else if (strcmp(name, "h") == 0 || strcmp(name, "help") == 0) {
 		showHelp();
 	}
+	else if (strcmp(name, "w") == 0 || strcmp(name, "wri") == 0) {
+		saveFile(args);
+	}
 	else if (strcmp(name, "q") == 0 || strcmp(name, "quit") == 0) {
-		return 1;
+		return quit();
+	}
+	else if (strcmp(name, "wq") == 0) {
+		saveFile(args);
+		return quit();
 	}
 	else {
 		printf(1, "command not found!\n");
 	}
 
-	return 0;
+	return FALSE;
 }
 
 // init linkedlist
@@ -409,7 +556,7 @@ int freeList(LineNode* start, LineNode* end)
 {
 	if (start == headNode || end == tailNode) {
 		printf(1, "cannot free list that contain root nodes!\n");
-		return 0;
+		return FALSE;
 	}
 	LineNode* now = start;
 	LineNode* tmp = end->next;
@@ -418,11 +565,10 @@ int freeList(LineNode* start, LineNode* end)
 	{
 		now = deleteNode(now);
 		if (now == NULL) {
-			return 0;
+			return FALSE;
 		}
 		++delNum;
 	}
-	fileLineNum -= delNum;
 	return delNum;
 }
 
@@ -455,7 +601,9 @@ LineNode* newNode(LineNode* prev) {
 	}
 	node->content = NULL;
 	node->length = 0;
-	fileLineNum++;
+
+	++fileLineNum;
+	isDirty = 1;
 
 	return node;
 }
@@ -483,6 +631,9 @@ LineNode * deleteNode(LineNode * node)
 	node->content = NULL;
 	free(node);
 
+	--fileLineNum;
+	isDirty = 1;
+
 	return next;
 }
 
@@ -496,37 +647,68 @@ LineNode * findNode(int index)
 	}
 	LineNode* now = NULL;
 
-	// from head to tail
-	if (index - 1 <= fileLineNum - index) {
-		now = headNode->next;
-		lineIdx = 1;
-		while (now->next != tailNode)
-		{
-			if (lineIdx == index) {
-				break;
+	//between head and cur
+	if (index <= currentLine) {
+		// from head to cur
+		if (index - 1 <= currentLine - index) {
+			now = headNode->next;
+			lineIdx = 1;
+			while (now!= curNode)
+			{
+				if (lineIdx == index) {
+					break;
+				}
+				now = now->next;
+				++lineIdx;
 			}
-			now = now->next;
-			++lineIdx;
 		}
-
-	}
-	// from tail to head
-	else {
-		now = tailNode->prev;
-		lineIdx = fileLineNum;
-		while (now->prev != headNode)
-		{
-			if (lineIdx == index) {
-				break;
+		// from cur to head
+		else{
+			now = curNode;
+			lineIdx = currentLine;
+			while (now->prev != headNode)
+			{
+				if (lineIdx == index) {
+					break;
+				}
+				now = now->prev;
+				--lineIdx;
 			}
-			now = now->prev;
-			--lineIdx;
+		}
+	}
+	//between cur and tail
+	else {
+		// from cur to tail
+		if (index - currentLine <= fileLineNum - index) {
+			now = curNode;
+			lineIdx = currentLine;
+			while (now->next != tailNode)
+			{
+				if (lineIdx == index) {
+					break;
+				}
+				now = now->next;
+				++lineIdx;
+			}
+		}
+		// from tail to cur
+		else {
+			now = tailNode->prev;
+			lineIdx = fileLineNum;
+			while (now!= curNode)
+			{
+				if (lineIdx == index) {
+					break;
+				}
+				now = now->prev;
+				--lineIdx;
+			}
 		}
 	}
 	return now;
 }
 
-// insert function
+// insert a line
 void ins(int idx, char * args)
 {
 	LineNode* prev;
@@ -550,13 +732,13 @@ void ins(int idx, char * args)
 	setStr(&now->content[0], &args[0], len);
 
 	printf(1, "%s%s\n", idx2Str(idx + 1), now->content);
-	isDirty = 1;
 }
 
+// modify lines
 void mod(int idx, char * args)
 {
 	LineNode* prev;
-	if (idx == 0){
+	if (idx == 0) {
 		printf(1, "index inputed is wrong!\n");
 	}
 	else
@@ -571,6 +753,7 @@ void mod(int idx, char * args)
 	for (len = 0; args[len] != '\0' && args[len] != '\n'; ++len)
 		;
 
+	// delete and new
 	deleteNode(prev->next);
 	LineNode* now = newNode(prev);
 	now->length = len;
@@ -578,7 +761,6 @@ void mod(int idx, char * args)
 	setStr(&now->content[0], &args[0], len);
 
 	printf(1, "%s%s\n", idx2Str(idx), now->content);
-	isDirty = 1;
 }
 
 // line index function
@@ -626,7 +808,7 @@ void del(char * args)
 	// target line
 	else {
 		idx1 = str2Idx(args);
-		if (idx1 == -1) {
+		if (idx1 == 99999) {
 			printf(1, "index1 inputed is wrong!\n");
 			return;
 		}
@@ -643,7 +825,7 @@ void del(char * args)
 		// line block
 		else {
 			idx2 = str2Idx(&args[i + 1]);
-			if (idx2 == -1) {
+			if (idx2 == 99999) {
 				printf(1, "index2 inputed is wrong!\n");
 				return;
 			}
@@ -653,18 +835,111 @@ void del(char * args)
 	if (idx1 <= idx2) {
 		int delNum = freeList(findNode(idx1), findNode(idx2));
 		if (delNum > 0)
-			printf(1, "%d - %d deleted. %d lines.\n", idx1, idx2, delNum);
+			printf(1, "%d - %d deleted. %d lines. fileLine: %d\n", idx1, idx2, delNum, fileLineNum);
 		else
 			printf(1, "delete %d - %d error.\n", idx1, idx2);
 	}
 	else {
 		printf(1, "idx2 should larger than idx1!\n");
 	}
-
-	isDirty = 1;
 }
 
-// parse [from+len] to target
+// cutting block [idx1,idx2] and link them after [tar]
+void cut(char * args)
+{
+	// get index
+	int idx1 = 0, idx2 = 0, tar = 0;
+
+	if (args[0] == '\0') {
+		printf(1, "index1 inputed is wrong!\n");
+		return;
+	}
+	// target line
+	else {
+		idx1 = str2Idx(args);
+		if (idx1 == 99999) {
+			printf(1, "index1 inputed is wrong!\n");
+			return;
+		}
+		int i = 0;
+		for (i = 0; args[i] != ' ' && args[i] != '\n' && args[i] != '\0'&&i < COMMAND_MAX_LEN; ++i)
+			;
+		if (args[i] != ' ') {
+			printf(1, "index2 inputed is wrong!\n");
+			return;
+		}
+		// line block
+		else {
+			++i;
+			idx2 = str2Idx(&args[i]);
+			if (idx2 == 99999) {
+				printf(1, "index2 inputed is wrong!\n");
+				return;
+			}
+			for (i; args[i] != ' ' && args[i] != '\n' && args[i] != '\0'&&i < COMMAND_MAX_LEN; ++i)
+				;
+			if (args[i] != ' ') {
+				printf(1, "tar inputed is wrong!\n");
+				return;
+			}
+			// line block
+			else {
+				tar = str2Idx(&args[i + 1]);
+				if (tar == 99999) {
+					printf(1, "tar inputed is wrong!\n");
+					return;
+				}
+			}
+		}
+	}
+
+	if (idx1 <= idx2 && (tar<idx1 || tar>idx2)) {
+		// parse lines block
+		LineNode* nidx1 = findNode(idx1);
+		LineNode* nidx2 = findNode(idx2);
+		LineNode* ntar = findNode(tar);
+		// link together
+		nidx1->prev->next = nidx2->next;
+		nidx2->next->prev = nidx1->prev;
+		ntar->next->prev = nidx2;
+		nidx2->next = ntar->next;
+		ntar->next = nidx1;
+		nidx1->prev = ntar;
+		printf(1, "successfully linked\n");
+	}
+	else {
+		printf(1, "index illegal!\n");
+	}
+}
+
+// quit the editor
+int quit()
+{
+	if (isDirty) {
+		printf(1, "this file has being changed! do you want to overwrite?(Y/N)\n");
+		char input[COMMAND_MAX_LEN] = {};
+		gets(input, COMMAND_MAX_LEN);
+		if (input[1] != '\0'&&input[1]!='\n') {
+			printf(1, "input error!\n");
+			return FALSE;
+		}
+		if (input[0] == 'Y' || input[0] == 'y'){
+			saveFile(oriPath);
+			return TRUE;
+		}
+		else if (input[0] == 'N' || input[0] == 'n')
+			return TRUE;
+		else{
+			printf(1, "input error!\n");
+			return FALSE;
+		}
+	}
+	else {
+		return TRUE;
+	}
+}
+
+// parse [from+len] to target, return target itself
 char* setStr(char* target, char* from, int len) {
 	int i = 0;
 	for (i = 0; i < len; ++i) {
@@ -715,14 +990,20 @@ char * idx2Str(int idx)
 // need the index wrote in the begin of the str and splited with a space
 int str2Idx(char * str)
 {
-	int idx = 0, i = 0;
+	int idx = 0, i = 0,mark=0;
+	if (str[0] == '-')
+		mark = 1;
 	for (i = 0; i < LINE_IDX_SPACE; ++i) {
 		if (str[i] == ' ' || str[i] == '\0' || str[i] == '\n')
 			break;
-		idx *= 10;
-		idx += str[i] - '0';
+		if (str[i] >= '0'&&str[i] <= '9') {
+			idx *= 10;
+			idx += str[i] - '0';
+		}
 	}
+	if (mark)
+		idx = -idx;
 	if (str[i] != ' ' && str[i] != '\0' && str[i] != '\n')
-		idx = -1;
+		idx = 99999;
 	return idx;
 }
