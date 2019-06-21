@@ -120,7 +120,14 @@ int loadFile(char* filePath) {
 	int file = open(filePath, O_RDONLY);
 	if (file == -1) {
 		printf(1, "file not found!\n");
-		return FALSE;
+		oriPath = filePath;
+		// init it
+		if (!initList()) {
+			printf(1, "initList error!\n");
+			return FALSE;
+		}
+		printf(1, "create new file!\n");
+		return TRUE;
 	}
 	printf(1, "file found!\n");
 	oriPath = filePath;
@@ -199,6 +206,8 @@ int saveFile(char * filePath)
 {
 	if (filePath[0] == '\0')
 		filePath = oriPath;
+	else
+		oriPath = filePath;
 
 	// delete old file
 	unlink(filePath);
@@ -220,6 +229,7 @@ int saveFile(char * filePath)
 	int count = 0;
 	int part = fileLineNum / 10;
 	LineNode* now = headNode->next;
+	printf(1, "fileName: %s\n",filePath);
 	printf(1, "saving");
 	while (now != tailNode)
 	{
@@ -227,7 +237,7 @@ int saveFile(char * filePath)
 		write(file, "\n", 1);
 		now = now->next;
 		++count;
-		if (count%part == 0) {
+		if (part>0&&count%part == 0) {
 			printf(1, ".");
 		}
 	}
